@@ -77,6 +77,12 @@ class Predator(Widget):
         if self.age > self.lifespan:
             self.parent.remove_widget(self)
 
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            print self
+        super(Predator, self).on_touch_down(touch)
+
+
 
 class World(Widget):
     count = 0
@@ -104,8 +110,8 @@ class World(Widget):
         """
         World.update is the main looping function for the program.
         This function check at each frame interval to see what events occur.
-        Primarily, it checks calls creature udate methods to determine 
-        creature life events, as well as checks for collisions between 
+        Primarily, it checks calls creature udate methods to determine
+        creature life events, as well as checks for collisions between
         creatures, at which point interaction events occur, such as potential
         matings and births.
         """
@@ -159,11 +165,11 @@ class World(Widget):
                 pop_factor = 150
             else:
                 pop_factor = 50
-            if random.randint(1, pop_factor) == (10):   
-                #  Get female 
+            if random.randint(1, pop_factor) == (10):
+                #  Get female
                 f = [c for c in (creatureA, creatureB) if c.gender == 'F'][0]
                 #  And male
-                m = [c for c in (creatureA, creatureB) if c.gender == 'M'][0]                
+                m = [c for c in (creatureA, creatureB) if c.gender == 'M'][0]
                 #  Choose which birth genes to use.
                 spawn = random.choice(f.offspring_genes)
                 for i in range(spawn):
