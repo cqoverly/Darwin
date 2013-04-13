@@ -31,10 +31,10 @@ class Predator(Widget):
         self.lifespan = random.randint(15000, 20000)  # orig: 9000, 12000
         self.hunger = 0
         self.age = 0
-        self.size = (10, 10)
+        self.size = self.get_size()
         self.draw()
-        self.velocity_x = random.randint(-2,2)
-        self.velocity_y = random.randint(-2,2)
+        self.velocity_x = random.randint(-2, 2)
+        self.velocity_y = random.randint(-2, 2)
         self.velocity = self.velocity_x, self.velocity_y
 
     def __str__(self):
@@ -52,6 +52,12 @@ class Predator(Widget):
         else:
             return 'Ellipse'
 
+    def get_size(self):
+        s = 2
+        if self.gender == 'M':
+            s = int(s * .8)  # Males are smaller.
+        return (s, s)
+
     def draw(self):
         with self.canvas:
             Color(*self.color)
@@ -65,12 +71,28 @@ class Predator(Widget):
 
     def move(self):
         self.pos = Vector(*self.velocity) + self.pos
-        self.canvas.clear()
-        self.draw()
+        # self.canvas.clear()
+        # self.draw()
+
+    def update_size(self):
+        s = 0
+        try:
+            s = int(max(self.age / 200, 2))
+        except ZeroDivisionError:
+            s = s
+        if self.gender == 'M':
+            s = s * .8  # Males are smaller.
+        self.size = (s, s)
 
     def update_attrs(self):
+        sex = self.gender
         self.age += 1
+        if (sex == 'F' and self.size[0] < 10) or\
+           (sex == 'M' and self.size[0] < 8):
+            self.update_size()
         self.move()
+        self.canvas.clear()
+        self.draw()
         self.is_dead()
 
     def is_dead(self):
@@ -153,15 +175,15 @@ class World(Widget):
         self.count += 1
 
     def mating(self, creatureA, creatureB):
-        genders = (creatureA.gender, creatureB.gender)
         spawn = 0
         pop_factor = 0
-        #  Make sure it's a M/F pairing.
-        if 'F' not in genders or 'M' not in genders:
-            pass
-        else:
+        sex = (creatureA.gender, creatureB.gender)
+        ages = (creatureA.age, creatureB.age)
+
+        #  Make sure it's a M/F pairing and both are old enough.
+        if ('F' in sex and 'M' in sex) and (ages[0] > 2000 and ages[1] > 2000):
             #  Random chance of successful mating
-            if len(self.children)/10 > 10:
+            if len(self.children)/10 > 4:
                 pop_factor = 150
             else:
                 pop_factor = 50
@@ -177,10 +199,10 @@ class World(Widget):
                     colors = (random.choice(f.color_genes),
                               random.choice(m.color_genes))
                     shapes = (random.choice(f.shape_genes),
-                             random.choice(m.shape_genes))
+                              random.choice(m.shape_genes))
                     offspring = (random.choice(f.offspring_genes),
                                  random.choice(m.offspring_genes))
-                    new_creature = Predator(pos=self.random_position(),
+                    new_creature = Predator(pos=f.pos,
                                             shape_genes=shapes,
                                             color_genes=colors,
                                             offspring_genes=offspring)
