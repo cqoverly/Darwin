@@ -29,7 +29,7 @@ class Predator(Widget):
         self.gender = random.choice(('M', 'F'))
         self.color = self.get_color()
         self.shape = self.get_shape()
-        self.lifespan = random.randint(15000, 20000)  # orig: 9000, 12000
+        self.lifespan = random.randint(8000, 11000)  # orig: 9000, 12000
         self.hunger = 0
         self.age = 0
         self.size = self.get_size()
@@ -143,6 +143,9 @@ class World(Widget):
                 random.randint(21, self.height-21))
 
     def start_world(self):
+        with self.canvas:
+            Color(1, 1, 1, .7)
+            Rectangle(size=self.size, pos=self.pos)
         print self.size
         for i in range(5):
             adam = Predator(pos=self.random_position(),
@@ -208,7 +211,7 @@ class World(Widget):
     def mating(self, creatureA, creatureB):
         """
         Method sets ability to mate and the chance that mating will occur and
-        be successful.
+        be successful.  Mutations are handled on a random (and rare) basis.
         """
         spawn = 0
         pop_factor = 0
@@ -224,11 +227,11 @@ class World(Widget):
             elif len(self.children)/10 > 4:
                 pop_factor = 150
             else:
-                pop_factor = 50
+                pop_factor = 11
             if random.randint(1, pop_factor) == (10):
                 #  Get female
                 f = [c for c in (creatureA, creatureB) if c.gender == 'F'][0]
-                #  And male
+                #  Get male
                 m = [c for c in (creatureA, creatureB) if c.gender == 'M'][0]
                 #  Choose which birth genes to use.
                 spawn = random.choice(f.offspring_genes)
@@ -242,18 +245,25 @@ class World(Widget):
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
+                        curr_colors = Predator.color_dict.values()
                         hue = random.randint(0, 2)  # R, G, or B hue.
+                        # value = random.randint(5, 10)/10.0
                         value = round(random.random(), 1)
                         if value == 0:
                             value += 0.1  # Make sure it has a value
-                        base_color = [0, 0, 0]
+                        # make mutable copy of gene to mutate
+                        base_color = list(Predator.color_dict[colors[1]])
+                        # Change gene
                         base_color[hue] = value
-                        gene_name = "M{0}".format(str(self.mutation_count))
-                        Predator.color_dict[gene_name] = tuple(base_color)
-# TODO: Brighten colors and allow for mied colors
-# TODO: Check new gene color to see if it already exists.
-                        colors[1] = gene_name
-                        self.mutation_count += 1
+                        base_color = tuple(base_color)
+                        # Add to color_dictionary if it doesn't exist.
+                        # Only transfer the gene if it doesn't exist.
+                        if base_color not in curr_colors:
+                            gene_name = "M{0}".format(str(self.mutation_count))
+                            Predator.color_dict[gene_name] = base_color
+                            self.mutation_count += 1
+                            print "MUTATION! Color: {0}".format(base_color)
+                            colors[1] = gene_name
 
                     colors = tuple(colors)
                     shapes = (random.choice(f.shape_genes),
