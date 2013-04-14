@@ -175,15 +175,23 @@ class World(Widget):
         self.count += 1
 
     def mating(self, creatureA, creatureB):
+        """
+        Method sets ability to mate and the chance that mating will occur and
+        be successful.
+        """
+
         spawn = 0
         pop_factor = 0
         sex = (creatureA.gender, creatureB.gender)
         ages = (creatureA.age, creatureB.age)
+        predators = len(self.children)  # Number of living predators
 
         #  Make sure it's a M/F pairing and both are old enough.
         if ('F' in sex and 'M' in sex) and (ages[0] > 2000 and ages[1] > 2000):
             #  Random chance of successful mating
-            if len(self.children)/10 > 4:
+            if predators/10 > 7:
+                pop_factor = 10000
+            elif len(self.children)/10 > 4:
                 pop_factor = 150
             else:
                 pop_factor = 50
