@@ -18,6 +18,7 @@ class Predator(Widget):
     # velocity_x = NumericProperty(0)
     # velocity_y = NumericProperty(0)
     # velocity = ReferenceListProperty(velocity_x, velocity_y)
+    color_dict = {'b': (0, 0, 1), 'r': (1, 0, 0)}
 
     def __init__(self,
                  *args, **kwargs):
@@ -42,9 +43,11 @@ class Predator(Widget):
 
     def get_color(self):
         if 'b' in self.color_genes:
-            return (0, 0, 1)
+            return Predator.color_dict['b']
+        elif 'r' in self.color_genes:
+            return Predator.color_dict['r']
         else:
-            return (1, 0, 0)
+            return Predator.color_dict[self.color_genes[0]]
 
     def get_shape(self):
         if 'r' in self.shape_genes:
@@ -110,6 +113,7 @@ class World(Widget):
     count = 0
     adam = ObjectProperty(None)
     eve = ObjectProperty(None)
+    mutation_count = 1
 
     def on_touch_down(self, touch):
         t = self.children
@@ -160,13 +164,17 @@ class World(Widget):
         creatures, at which point interaction events occur, such as potential
         matings and births.
         """
-        if self.count <= 600:
+
+        # Randomize movements for each predator instance
+        if self.count <= 600:  # Overall movement time frame.
+            #  Check for random movement every 10 frames.
             if self.count % 10 == 0:
                 for c in self.children:
+                    #  Change only occurs 1/6th of the time per 10 frames.
                     if random.randint(1,6) == 3:
                         c.velocity_x = random.randint(-2, 2)
                         c.velocity_y = random.randint(-2, 2)
-                        c.velocity = (c.velocity_x, c.velocity_y)
+                        # c.velocity = (c.velocity_x, c.velocity_y)
         else:
             self.count = 1
         if self.count < 1:
@@ -202,7 +210,6 @@ class World(Widget):
         Method sets ability to mate and the chance that mating will occur and
         be successful.
         """
-
         spawn = 0
         pop_factor = 0
         sex = (creatureA.gender, creatureB.gender)
@@ -227,8 +234,28 @@ class World(Widget):
                 spawn = random.choice(f.offspring_genes)
                 for i in range(spawn):
                     #  gather genes for children.
-                    colors = (random.choice(f.color_genes),
-                              random.choice(m.color_genes))
+                    colors = [random.choice(f.color_genes),
+                              random.choice(m.color_genes)]
+
+                    # check for color mutation
+                    mutation = (random.randint(1, 10) == 5)
+                    # If there is a mutation, generate mutant color
+                    # and add it to the Predator.color_dict
+                    if mutation:
+                        hue = random.randint(0, 2)  # R, G, or B hue.
+                        value = round(random.random(), 1)
+                        if value == 0:
+                            value += 0.1  # Make sure it has a value
+                        base_color = [0, 0, 0]
+                        base_color[hue] = value
+                        gene_name = "M{0}".format(str(self.mutation_count))
+                        Predator.color_dict[gene_name] = tuple(base_color)
+# TODO: Brighten colors and allow for mied colors
+# TODO: Check new gene color to see if it already exists.
+                        colors[1] = gene_name
+                        self.mutation_count += 1
+
+                    colors = tuple(colors)
                     shapes = (random.choice(f.shape_genes),
                               random.choice(m.shape_genes))
                     offspring = (random.choice(f.offspring_genes),
