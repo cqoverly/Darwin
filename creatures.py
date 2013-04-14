@@ -111,6 +111,29 @@ class World(Widget):
     adam = ObjectProperty(None)
     eve = ObjectProperty(None)
 
+    def on_touch_down(self, touch):
+        t = self.children
+        reds = len([c for c in t if c.color == (1, 0, 0)])
+        els = len([c for c in t if c.shape == 'Ellipse'])
+        males = len([c for c in t if c.gender == 'M'])
+        attrs = {'reds': reds,
+                 'blues': len(t) - reds,
+                 'els': els,
+                 'rects': len(t) - els,
+                 'males': males,
+                 'females': len(t) - males,
+                 'age_avg': sum([c.age for c in t])/float(len(t)),
+                 'total': len(t)}
+        print """
+                Total: %(total)d
+                Average Age: %(age_avg)0.2f
+                Males: %(males)d / Females: %(females)d
+                Blues: %(blues)d / Reds: %(reds)d
+                Rectangles: %(rects)d / Ellipses: %(els)d
+            """ % (attrs)
+
+        super(World, self).on_touch_down(touch)
+
     def random_position(self):
         return (random.randint(21, self.width-21),
                 random.randint(21, self.height-21))
