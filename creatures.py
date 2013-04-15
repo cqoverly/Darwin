@@ -13,6 +13,10 @@ from kivy.properties import ObjectProperty, ReferenceListProperty,\
     NumericProperty
 from kivy.core.audio import SoundLoader
 
+death_snd = SoundLoader.load('sounds/neck_snap-Vladimir-719669812.wav')
+birth_snd = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
+mutation_snd = SoundLoader.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
+info_snd = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
 
 
 class Predator(Widget):
@@ -40,7 +44,6 @@ class Predator(Widget):
         self.velocity = self.velocity_x, self.velocity_y
 
     def __str__(self):
-        # return str(self.__dict__)
 
         try:
             return"""
@@ -84,8 +87,6 @@ class Predator(Widget):
 
     def move(self):
         self.pos = Vector(*self.velocity) + self.pos
-        # self.canvas.clear()
-        # self.draw()
 
     def update_size(self):
         s = 0
@@ -109,8 +110,17 @@ class Predator(Widget):
         self.is_dead()
 
     def is_dead(self):
-        if self.age > self.lifespan:
+        global death_snd
+        curr_preds = len(self.parent.children)
+        too_old = False
+        if curr_preds > 70:
+            if self.age > self.lifespan * .7:
+                too_old = True
+        elif self.age > self.lifespan:
+            too_old = True
+        if too_old:
             self.parent.remove_widget(self)
+            death_snd.play()
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -127,7 +137,7 @@ class World(Widget):
 
 
     def on_touch_down(self, touch):
-        sound = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
+        global info_snd
         t = self.children
         reds = len([c for c in t if c.color == (1, 0, 0)])
         els = len([c for c in t if c.shape == 'Ellipse'])
@@ -140,7 +150,8 @@ class World(Widget):
                  'females': len(t) - males,
                  'age_avg': sum([c.age for c in t])/float(len(t)),
                  'total': len(t)}
-        sound.play()
+        # sound.play()
+        info_snd.play()
         print """
                 Total: %(total)d
                 Average Age: %(age_avg)0.2f
@@ -188,10 +199,9 @@ class World(Widget):
             if self.count % 10 == 0:
                 for c in self.children:
                     #  Change only occurs 1/6th of the time per 10 frames.
-                    if random.randint(1,6) == 3:
+                    if random.randint(1, 6) == 3:
                         c.velocity_x = random.randint(-2, 2)
                         c.velocity_y = random.randint(-2, 2)
-                        # c.velocity = (c.velocity_x, c.velocity_y)
         else:
             self.count = 1
         if self.count < 1:
@@ -199,12 +209,10 @@ class World(Widget):
             print self.size
             self.count += 1
             self.start_world()
-        # elif self.count == 1:
-        #     print self.size
-        #     self.start_world()
-        #     self.count += 1
-        #     print self.children
-        for c in self.children:
+        # Check all
+        preds = [pred for pred in self.children if pred.__class__ == Predator]
+        # for c in self.children:
+        for c in preds:
             #  Check to see if creature hitting top of bottom of window.
             if c.top > self.height or c.y < self.y:
                 c.velocity_y *= -1
@@ -214,10 +222,10 @@ class World(Widget):
             c.velocity = c.velocity_x, c.velocity_y
             #  Check females for collisions.
             if c.gender == 'F':
-                others = [p for p in self.children if p != c]
-                for p in others:
-                    if c.collide_widget(p) and p.gender == 'M':
-                        self.mating(c, p)
+                others = [o for o in self.children if o != c]
+                for o in others:
+                    if c.collide_widget(o) and o.gender == 'M':
+                        self.mating(c, o)
             c.update_attrs()
 
         self.count += 1
@@ -232,7 +240,9 @@ class World(Widget):
         sex = (creatureA.gender, creatureB.gender)
         ages = (creatureA.age, creatureB.age)
         predators = len(self.children)  # Number of living predators
-        sound = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
+        # sound = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
+        global birth_snd
+        global mutation_snd
         curr_preds = len(self.children)
 
         #  Make sure it's a M/F pairing and both are old enough.
@@ -255,6 +265,7 @@ class World(Widget):
                 m = [c for c in (creatureA, creatureB) if c.gender == 'M'][0]
                 #  Choose which birth genes to use.
                 spawn = random.choice(f.offspring_genes)
+                sound = birth_snd
                 for i in range(spawn):
                     #  gather genes for children.
                     colors = [random.choice(f.color_genes),
@@ -265,8 +276,8 @@ class World(Widget):
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
-                        sound_file = 'sounds/Child Scream-SoundBible.com-1951741114.wav'
-                        sound = SoundLoader.load(sound_file)
+                        # sound_file = 'sounds/Child Scream-SoundBible.com-1951741114.wav'
+                        # sound = SoundLoader.load(sound_file)
                         curr_colors = Predator.color_dict.values()
                         hue = random.randint(0, 2)  # R, G, or B hue.
                         # value = random.randint(5, 10)/10.0
@@ -281,6 +292,7 @@ class World(Widget):
                         # Add to color_dictionary if it doesn't exist.
                         # Only transfer the gene if it doesn't exist.
                         if base_color not in curr_colors:
+                            sound = mutation_snd
                             gene_name = "M{0}".format(str(self.mutation_count))
                             Predator.color_dict[gene_name] = base_color
                             self.mutation_count += 1
