@@ -29,7 +29,7 @@ class Predator(Widget):
         self.gender = random.choice(('M', 'F'))
         self.color = self.get_color()
         self.shape = self.get_shape()
-        self.lifespan = random.randint(8000, 11000)  # orig: 9000, 12000
+        self.lifespan = random.randint(12000, 15000)  # orig: 9000, 12000
         self.hunger = 0
         self.age = 0
         self.size = self.get_size()
@@ -227,7 +227,7 @@ class World(Widget):
             elif len(self.children)/10 > 4:
                 pop_factor = 150
             else:
-                pop_factor = 11
+                pop_factor = 50
             if random.randint(1, pop_factor) == (10):
                 #  Get female
                 f = [c for c in (creatureA, creatureB) if c.gender == 'F'][0]
@@ -241,7 +241,7 @@ class World(Widget):
                               random.choice(m.color_genes)]
 
                     # check for color mutation
-                    mutation = (random.randint(1, 10) == 5)
+                    mutation = (random.randint(1, 50) == 5)
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
@@ -285,7 +285,7 @@ class WorldApp(App):
 
         def build(self):
             world = World()
-            Clock.schedule_interval(world.update, 1.0/20.0)
+            Clock.schedule_interval(world.update, 1.0/30.0)
             return world
 
 
