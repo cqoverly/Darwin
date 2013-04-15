@@ -40,7 +40,16 @@ class Predator(Widget):
         self.velocity = self.velocity_x, self.velocity_y
 
     def __str__(self):
-        return str(self.__dict__)
+        # return str(self.__dict__)
+
+        try:
+            return"""
+                    Sex: %(gender)s  Lifespan: %(lifespan)d
+                    Color: %(color)s  Shape: %(shape)s
+                    Color Genes: %(color_genes)s  Shape Genes: %(shape_genes)s
+                  """ % self.__dict__
+        except KeyError:
+            return str(self.__dict__)
 
     def get_color(self):
         if 'b' in self.color_genes:
@@ -224,15 +233,18 @@ class World(Widget):
         ages = (creatureA.age, creatureB.age)
         predators = len(self.children)  # Number of living predators
         sound = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
+        curr_preds = len(self.children)
 
         #  Make sure it's a M/F pairing and both are old enough.
         if ('F' in sex and 'M' in sex) and (ages[0] > 2000 and ages[1] > 2000):
             #  Random chance of successful mating
-            if predators/15 > 7:
+            if curr_preds > 100:
+                pop_factor = 1000000
+            elif predators/15 > 6:
                 pop_factor = 10000
-            elif len(self.children)/15 > 4:
+            elif curr_preds/15 > 3:
                 pop_factor = 150
-            elif len(self.children)/15 > 1:
+            elif curr_preds/15 > 1:
                 pop_factor = 50
             else:
                 pop_factor = 20
