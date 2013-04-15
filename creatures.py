@@ -11,6 +11,7 @@ from kivy.clock import Clock
 from kivy.vector import Vector
 from kivy.properties import ObjectProperty, ReferenceListProperty,\
     NumericProperty
+from kivy.core.audio import SoundLoader
 
 
 
@@ -108,14 +109,16 @@ class Predator(Widget):
         super(Predator, self).on_touch_down(touch)
 
 
-
 class World(Widget):
     count = 0
     adam = ObjectProperty(None)
     eve = ObjectProperty(None)
     mutation_count = 1
 
+
+
     def on_touch_down(self, touch):
+        sound = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
         t = self.children
         reds = len([c for c in t if c.color == (1, 0, 0)])
         els = len([c for c in t if c.shape == 'Ellipse'])
@@ -128,6 +131,7 @@ class World(Widget):
                  'females': len(t) - males,
                  'age_avg': sum([c.age for c in t])/float(len(t)),
                  'total': len(t)}
+        sound.play()
         print """
                 Total: %(total)d
                 Average Age: %(age_avg)0.2f
@@ -218,6 +222,7 @@ class World(Widget):
         sex = (creatureA.gender, creatureB.gender)
         ages = (creatureA.age, creatureB.age)
         predators = len(self.children)  # Number of living predators
+        sound = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
 
         #  Make sure it's a M/F pairing and both are old enough.
         if ('F' in sex and 'M' in sex) and (ages[0] > 2000 and ages[1] > 2000):
@@ -275,6 +280,7 @@ class World(Widget):
                                             color_genes=colors,
                                             offspring_genes=offspring)
                     self.add_widget(new_creature)
+                    sound.play()
                     print new_creature
                 print """
                 MATING! Babies: {0} / Total Predators: {1}
