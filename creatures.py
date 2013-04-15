@@ -156,10 +156,11 @@ class World(Widget):
                             id='adam')
             adam.gender = 'M'
             self.add_widget(adam)
-            eve = Predator(pos=self.random_position(),
-                           id='eve')
-            eve.gender = 'F'
-            self.add_widget(eve)
+        for i in range(10):
+                eve = Predator(pos=self.random_position(),
+                               id='eve')
+                eve.gender = 'F'
+                self.add_widget(eve)
 
 
     def update(self, dt):
@@ -227,12 +228,14 @@ class World(Widget):
         #  Make sure it's a M/F pairing and both are old enough.
         if ('F' in sex and 'M' in sex) and (ages[0] > 2000 and ages[1] > 2000):
             #  Random chance of successful mating
-            if predators/10 > 7:
+            if predators/15 > 7:
                 pop_factor = 10000
-            elif len(self.children)/10 > 4:
+            elif len(self.children)/15 > 4:
                 pop_factor = 150
-            else:
+            elif len(self.children)/15 > 1:
                 pop_factor = 50
+            else:
+                pop_factor = 20
             if random.randint(1, pop_factor) == (10):
                 #  Get female
                 f = [c for c in (creatureA, creatureB) if c.gender == 'F'][0]
@@ -250,6 +253,8 @@ class World(Widget):
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
+                        sound_file = 'sounds/Child Scream-SoundBible.com-1951741114.wav'
+                        sound = SoundLoader.load(sound_file)
                         curr_colors = Predator.color_dict.values()
                         hue = random.randint(0, 2)  # R, G, or B hue.
                         # value = random.randint(5, 10)/10.0
