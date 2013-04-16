@@ -6,12 +6,18 @@ kivy.require('1.6.0')
 
 from kivy.app import App
 from kivy.uix.widget import Widget
+from kivy.uix.boxlayout import BoxLayout
 from kivy.graphics import Rectangle, Ellipse, Color
 from kivy.clock import Clock
 from kivy.vector import Vector
 from kivy.properties import ObjectProperty, ReferenceListProperty,\
     NumericProperty
 from kivy.core.audio import SoundLoader
+from kivy.config import Config
+
+Config.set('graphics', 'width', '1000')
+Config.set('graphics', 'height', '600')
+
 
 # Load sound effects.
 death_snd = SoundLoader.load('sounds/neck_snap-Vladimir-719669812.wav')
@@ -21,10 +27,8 @@ info_snd = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
 
 
 class Predator(Widget):
-    # velocity_x = NumericProperty(0)
-    # velocity_y = NumericProperty(0)
-    # velocity = ReferenceListProperty(velocity_x, velocity_y)
     color_dict = {'b': (0, 0, 1), 'r': (1, 0, 0)}
+    lifespan_factor = 1  # Controlled by ControlPanel.lifespan_ctl slider
 
     def __init__(self,
                  *args, **kwargs):
@@ -49,10 +53,10 @@ class Predator(Widget):
 
         try:
             return"""
-                    Sex: %(gender)s  Lifespan: %(lifespan)d  Age %(age)d
-                    Color: %(color)s  Color Name: %(color_name)s Shape: %(shape)s
-                    Color Genes: %(color_genes)s  Shape Genes: %(shape_genes)s
-                  """ % self.__dict__
+                    Sex: {gender}  Lifespan: {lifespan}  Age {age}
+                    Color: {color}  Color Name: {color_name} Shape: {shape}
+                    Color Genes: {color_genes}  Shape Genes: {shape_genes}
+                  """.format(**self.__dict__)
         except KeyError:
             return str(self.__dict__)
 
@@ -115,12 +119,13 @@ class Predator(Widget):
 
     def is_dead(self):
         global death_snd
+        lf = Predator.lifespan_factor
         curr_preds = len(self.parent.children)
         too_old = False
         if curr_preds > 70:
-            if self.age > self.lifespan * .7:
+            if self.age > (self.lifespan * lf) * .7:
                 too_old = True
-        elif self.age > self.lifespan:
+        elif self.age > self.lifespan * lf:
             too_old = True
         if too_old:
             self.parent.remove_widget(self)
@@ -137,44 +142,15 @@ class World(Widget):
     adam = ObjectProperty(None)
     eve = ObjectProperty(None)
     mutation_count = 1
-
-    def on_touch_down(self, touch):
-        global info_snd
-        t = self.children
-        reds = len([c for c in t if c.color == (1, 0, 0)])
-        els = len([c for c in t if c.shape == 'Ellipse'])
-        males = len([c for c in t if c.gender == 'M'])
-        attrs = {'reds': reds,
-                 'blues': len(t) - reds,
-                 'els': els,
-                 'rects': len(t) - els,
-                 'males': males,
-                 'females': len(t) - males,
-                 'age_avg': sum([c.age for c in t])/float(len(t)),
-                 'total': len(t)}
-        info_snd.play()
-        print """
-                Total: %(total)d
-                Average Age: %(age_avg)0.2f
-                Males: %(males)d / Females: %(females)d
-                Blues: %(blues)d / Reds: %(reds)d
-                Rectangles: %(rects)d / Ellipses: %(els)d
-            """ % (attrs)
-        active_colors = sorted(set([c.color_name for c in self.children]))
-        d = Predator.color_dict
-        curr_cgenes = dict((color, d.get(color)) for color in active_colors)
-        print str(curr_cgenes)
-
-        super(World, self).on_touch_down(touch)
+    sim_started = False
+    mutation_rate = 50
+    lifespan_ratio = 1
 
     def random_position(self):
-        return (random.randint(21, self.width-21),
-                random.randint(21, self.height-21))
+        return (random.randint(self.x+21, self.width-21),
+                random.randint(self.y+21, self.height-21))
 
     def start_world(self):
-        with self.canvas:
-            Color(1, 1, 1, .7)
-            Rectangle(size=self.size, pos=self.pos)
         print self.size
         for i in range(5):
             adam = Predator(pos=self.random_position(),
@@ -187,7 +163,38 @@ class World(Widget):
                 eve.gender = 'F'
                 self.add_widget(eve)
 
+    def on_touch_down(self, touch):
+        if self.collide_point(*touch.pos):
+            global info_snd
+            t = self.children
+            reds = len([c for c in t if c.color == (1, 0, 0)])
+            els = len([c for c in t if c.shape == 'Ellipse'])
+            males = len([c for c in t if c.gender == 'M'])
+            attrs = {'reds': reds,
+                     'blues': len(t) - reds,
+                     'els': els,
+                     'rects': len(t) - els,
+                     'males': males,
+                     'females': len(t) - males,
+                     'age_avg': sum([c.age for c in t])/float(len(t)),
+                     'total': len(t)}
+            info_snd.play()
+            info = """
+                    Total: {total}
+                    Average Age: {age_avg}
+                    Males: {males} / Females: {females}
+                    Blues: {blues} / Reds: {reds}
+                    Rectangles: {rects} / Ellipses: {els}
+                """.format(**attrs)
+            print info
+            self.parent.ctl_panel.update_info(attrs)
+            active_colors = sorted(set([c.color_name for c in self.children]))
+            d = Predator.color_dict
+            curr_cgenes = dict((color, d.get(color)) for color in active_colors)
+            print str(curr_cgenes)
+            print "Mutation rate:", self.mutation_rate
 
+        super(World, self).on_touch_down(touch)
 
     def mating(self, creatureA, creatureB):
         """
@@ -234,7 +241,10 @@ class World(Widget):
                               random.choice(m.color_genes)]
 
                     # check for color mutation
-                    mutation = (random.randint(1, 20) == 5)
+                    if self.mutation_rate >= 1:
+                        mutation = (random.randint(1, self.mutation_rate) == 1)
+                    else:
+                        mutation = False
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
@@ -296,11 +306,12 @@ class World(Widget):
                         c.velocity_y = random.randint(-2, 2)
         else:
             self.count = 1
-        if self.count < 1:
+        if self.count == 2 and not self.sim_started:
             print "Less than 1"
             print self.size
             self.count += 1
             self.start_world()
+            self.sim_started = True
         # Check all
         preds = [pred for pred in self.children if pred.__class__ == Predator]
         # for c in self.children:
@@ -322,15 +333,58 @@ class World(Widget):
 
         self.count += 1
 
+class ControlPanel(BoxLayout):
+    lifespan_ctl = ObjectProperty(None)
+    mating_ctl = ObjectProperty(None)
+    sim_speed = ObjectProperty(None)
+    mutation_ctl = ObjectProperty(None)
+    info_disp = ObjectProperty(None)
 
-class WorldApp(App):
+    def on_touch_down(self, touch):
+        for wid in [self.lifespan_ctl, self.mutation_ctl]:
+            if wid.collide_point(*touch.pos):
+                touch.ud['control'] = wid
+        super(ControlPanel, self).on_touch_down(touch)
+
+    def on_touch_up(self, touch):
+        if touch.ud.get('control') == self.mutation_ctl:
+            rate = self.mutation_ctl.value_normalized * self.mutation_ctl.max
+            World.mutation_rate = int(rate)
+        elif touch.ud.get('control') == self.lifespan_ctl:
+            Predator.lifespan_factor = self.lifespan_ctl.value/100
+            print Predator.lifespan_factor
+
+    def update_info(self, info_dict):
+
+        self.info_disp.text = """
+Total: {total}
+Average Age: {age_avg}
+Males: {males} / Females: {females}
+Blues: {blues} / Reds: {reds}
+Rects: {rects} / Ellipses: {els}
+""".format(**info_dict)
+
+
+
+
+class Container(BoxLayout):
+    world = ObjectProperty(None)
+    ctl_panel = ObjectProperty(None)
+
+    def update(self, dt):
+        self.world.update(dt)
+
+
+
+class DarwinApp(App):
 
         def build(self):
-            world = World()
-            Clock.schedule_interval(world.update, 1.0/30.0)
-            return world
+            rate = 30.0
+            darwin = Container()
+            Clock.schedule_interval(darwin.update, 1.0/rate)
+            return darwin
 
 
 if __name__ == "__main__":
-    WorldApp().run()
+    DarwinApp().run()
 

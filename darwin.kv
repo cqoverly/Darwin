@@ -1,0 +1,76 @@
+#: kivy 1.6.0
+
+
+<World>:
+
+    pos: self.pos
+
+
+<ControlPanel>:
+    mutation_ctl: mutation_ctl
+    lifespan_ctl: lifespan_ctl
+    info_disp: info
+
+    size_hint_x: None
+    width: 200
+    pos: self.pos
+
+    BoxLayout:
+        orientation: 'vertical'
+        padding: 10
+
+        TextInput:
+            id: info
+            readonly: True
+            text: "Welcome!"
+
+        Label:
+            size_hint_y: None
+            height: 30
+            text: "Mutation Rate: 1 in {0}".format(int(mutation_ctl.value_normalized * mutation_ctl.max))
+
+        Slider:
+            id: mutation_ctl
+            size_hint_y: None
+            height: 30
+            max: 100
+            value_normalized: .5
+
+        Label:
+            size_hint_y: None
+            height: 30
+            text: "Lifespan: {0}%".format(int(lifespan_ctl.value))
+
+        Slider:
+            id: lifespan_ctl
+            size_hint_y: None
+            height: 30
+            max: 200
+            value_normalized: .5
+            steps: 1
+
+
+<Container>:
+    world: world
+    ctl_panel: ctl_panel
+
+
+    size: 1000, 800
+
+    ControlPanel:
+        id: ctl_panel
+
+
+    World:
+        id: world
+        canvas:
+            Color:
+                rgba: 1, 1, 1, .7
+
+            Rectangle:
+                size: self.size
+                pos: self.pos
+
+
+
+
