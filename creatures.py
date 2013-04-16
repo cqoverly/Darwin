@@ -13,6 +13,7 @@ from kivy.properties import ObjectProperty, ReferenceListProperty,\
     NumericProperty
 from kivy.core.audio import SoundLoader
 
+# Load sound effects.
 death_snd = SoundLoader.load('sounds/neck_snap-Vladimir-719669812.wav')
 birth_snd = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
 mutation_snd = SoundLoader.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
@@ -32,7 +33,8 @@ class Predator(Widget):
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
         self.gender = random.choice(('M', 'F'))
-        self.color = self.get_color()
+        self.color = self.get_color()[0]
+        self.color_name = self.get_color()[1]
         self.shape = self.get_shape()
         self.lifespan = random.randint(12000, 15000)  # orig: 9000, 12000
         self.hunger = 0
@@ -47,8 +49,8 @@ class Predator(Widget):
 
         try:
             return"""
-                    Sex: %(gender)s  Lifespan: %(lifespan)d
-                    Color: %(color)s  Shape: %(shape)s
+                    Sex: %(gender)s  Lifespan: %(lifespan)d  Age %(age)d
+                    Color: %(color)s  Color Name: %(color_name)s Shape: %(shape)s
                     Color Genes: %(color_genes)s  Shape Genes: %(shape_genes)s
                   """ % self.__dict__
         except KeyError:
@@ -56,11 +58,13 @@ class Predator(Widget):
 
     def get_color(self):
         if 'b' in self.color_genes:
-            return Predator.color_dict['b']
+            return (Predator.color_dict['b'], 'b')
         elif 'r' in self.color_genes:
-            return Predator.color_dict['r']
+            return (Predator.color_dict['r'], 'r')
         else:
-            return Predator.color_dict[self.color_genes[0]]
+
+            return (Predator.color_dict[self.color_genes[0]],
+                    self.color_genes[0])
 
     def get_shape(self):
         if 'r' in self.shape_genes:
@@ -134,8 +138,6 @@ class World(Widget):
     eve = ObjectProperty(None)
     mutation_count = 1
 
-
-
     def on_touch_down(self, touch):
         global info_snd
         t = self.children
@@ -150,7 +152,6 @@ class World(Widget):
                  'females': len(t) - males,
                  'age_avg': sum([c.age for c in t])/float(len(t)),
                  'total': len(t)}
-        # sound.play()
         info_snd.play()
         print """
                 Total: %(total)d
@@ -159,6 +160,10 @@ class World(Widget):
                 Blues: %(blues)d / Reds: %(reds)d
                 Rectangles: %(rects)d / Ellipses: %(els)d
             """ % (attrs)
+        active_colors = sorted(set([c.color_name for c in self.children]))
+        d = Predator.color_dict
+        curr_cgenes = dict((color, d.get(color)) for color in active_colors)
+        print str(curr_cgenes)
 
         super(World, self).on_touch_down(touch)
 
@@ -240,7 +245,6 @@ class World(Widget):
         sex = (creatureA.gender, creatureB.gender)
         ages = (creatureA.age, creatureB.age)
         predators = len(self.children)  # Number of living predators
-        # sound = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
         global birth_snd
         global mutation_snd
         curr_preds = len(self.children)
@@ -272,22 +276,20 @@ class World(Widget):
                               random.choice(m.color_genes)]
 
                     # check for color mutation
-                    mutation = (random.randint(1, 50) == 5)
+                    mutation = (random.randint(1, 20) == 5)
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
-                        # sound_file = 'sounds/Child Scream-SoundBible.com-1951741114.wav'
-                        # sound = SoundLoader.load(sound_file)
                         curr_colors = Predator.color_dict.values()
-                        hue = random.randint(0, 2)  # R, G, or B hue.
-                        # value = random.randint(5, 10)/10.0
-                        value = round(random.random(), 1)
-                        if value == 0:
-                            value += 0.1  # Make sure it has a value
-                        # make mutable copy of gene to mutate
-                        base_color = list(Predator.color_dict[colors[1]])
-                        # Change gene
-                        base_color[hue] = value
+                        base_color = [0, 0, 0]
+                        for hue in range(2):  # R, G, or B hue.
+                            # value = random.randint(5, 10)/10.0
+                            value = round(random.random(), 1)
+                            if value == 0:
+                                value += 0.1  # Make sure it has a value
+                            # make mutable copy of gene to mutate
+                            # Change gene
+                            base_color[hue] = value
                         base_color = tuple(base_color)
                         # Add to color_dictionary if it doesn't exist.
                         # Only transfer the gene if it doesn't exist.
