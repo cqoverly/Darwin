@@ -188,58 +188,16 @@ class World(Widget):
                 self.add_widget(eve)
 
 
-    def update(self, dt):
-        """
-        World.update is the main looping function for the program.
-        This function check at each frame interval to see what events occur.
-        Primarily, it checks calls creature udate methods to determine
-        creature life events, as well as checks for collisions between
-        creatures, at which point interaction events occur, such as potential
-        matings and births.
-        """
-
-        # Randomize movements for each predator instance
-        if self.count <= 600:  # Overall movement time frame.
-            #  Check for random movement every 10 frames.
-            if self.count % 10 == 0:
-                for c in self.children:
-                    #  Change only occurs 1/6th of the time per 10 frames.
-                    if random.randint(1, 6) == 3:
-                        c.velocity_x = random.randint(-2, 2)
-                        c.velocity_y = random.randint(-2, 2)
-        else:
-            self.count = 1
-        if self.count < 1:
-            print "Less than 1"
-            print self.size
-            self.count += 1
-            self.start_world()
-        # Check all
-        preds = [pred for pred in self.children if pred.__class__ == Predator]
-        # for c in self.children:
-        for c in preds:
-            #  Check to see if creature hitting top of bottom of window.
-            if c.top > self.height or c.y < self.y:
-                c.velocity_y *= -1
-            #  Check to see if creature is hetting left or right sede of window.
-            if c.x < self.x or c.x + c.width > self.width:
-                c.velocity_x *= -1
-            c.velocity = c.velocity_x, c.velocity_y
-            #  Check females for collisions.
-            if c.gender == 'F':
-                others = [o for o in self.children if o != c]
-                for o in others:
-                    if c.collide_widget(o) and o.gender == 'M':
-                        self.mating(c, o)
-            c.update_attrs()
-
-        self.count += 1
 
     def mating(self, creatureA, creatureB):
         """
         Method sets ability to mate and the chance that mating will occur and
         be successful.  Mutations are handled on a random (and rare) basis.
         """
+# TODO: Pull method too deal with mutation separately, and make it not
+# creature specific so it can be used with any set of genes in any creature.
+# Also, it should be made to deal with multiple sets of genes, returning
+# a mutatated gene for each attribute addressed my the genes in a gene list.
         spawn = 0
         pop_factor = 0
         sex = (creatureA.gender, creatureB.gender)
@@ -316,6 +274,53 @@ class World(Widget):
                 print """
                 MATING! Babies: {0} / Total Predators: {1}
                 """.format(spawn, len(self.children))
+
+    def update(self, dt):
+        """
+        World.update is the main looping function for the program.
+        This function check at each frame interval to see what events occur.
+        Primarily, it checks calls creature udate methods to determine
+        creature life events, as well as checks for collisions between
+        creatures, at which point interaction events occur, such as potential
+        matings and births.
+        """
+
+        # Randomize movements for each predator instance
+        if self.count <= 600:  # Overall movement time frame.
+            #  Check for random movement every 10 frames.
+            if self.count % 10 == 0:
+                for c in self.children:
+                    #  Change only occurs 1/6th of the time per 10 frames.
+                    if random.randint(1, 6) == 3:
+                        c.velocity_x = random.randint(-2, 2)
+                        c.velocity_y = random.randint(-2, 2)
+        else:
+            self.count = 1
+        if self.count < 1:
+            print "Less than 1"
+            print self.size
+            self.count += 1
+            self.start_world()
+        # Check all
+        preds = [pred for pred in self.children if pred.__class__ == Predator]
+        # for c in self.children:
+        for c in preds:
+            #  Check to see if creature hitting top of bottom of window.
+            if c.top > self.height or c.y < self.y:
+                c.velocity_y *= -1
+            #  Check to see if creature is hetting left or right sede of window.
+            if c.x < self.x or c.x + c.width > self.width:
+                c.velocity_x *= -1
+            c.velocity = c.velocity_x, c.velocity_y
+            #  Check females for collisions.
+            if c.gender == 'F':
+                others = [o for o in self.children if o != c]
+                for o in others:
+                    if c.collide_widget(o) and o.gender == 'M':
+                        self.mating(c, o)
+            c.update_attrs()
+
+        self.count += 1
 
 
 class WorldApp(App):
