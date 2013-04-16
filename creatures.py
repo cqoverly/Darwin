@@ -19,11 +19,12 @@ Config.set('graphics', 'width', '1000')
 Config.set('graphics', 'height', '600')
 
 
-# Load sound effects.
+# Load sound effects and sound controls.
 death_snd = SoundLoader.load('sounds/neck_snap-Vladimir-719669812.wav')
 birth_snd = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
 mutation_snd = SoundLoader.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
 info_snd = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
+snd_volume = 1
 
 
 class Predator(Widget):
@@ -119,6 +120,7 @@ class Predator(Widget):
 
     def is_dead(self):
         global death_snd
+        global snd_volume
         lf = Predator.lifespan_factor
         curr_preds = len(self.parent.children)
         too_old = False
@@ -129,6 +131,7 @@ class Predator(Widget):
             too_old = True
         if too_old:
             self.parent.remove_widget(self)
+            death_snd.volume = snd_volume
             death_snd.play()
 
     def on_touch_down(self, touch):
