@@ -250,7 +250,7 @@ class World(Widget):
                     if mutation:
                         curr_colors = Predator.color_dict.values()
                         base_color = [0, 0, 0]
-                        for hue in range(2):  # R, G, or B hue.
+                        for hue in range(3):  # R, G, or B hue.
                             # value = random.randint(5, 10)/10.0
                             value = round(random.random(), 1)
                             if value == 0:
