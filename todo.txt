@@ -1,0 +1,22 @@
+Create control panel:
+    SLide control for:
+        Lifespan
+        Mutation Rate
+        Breeding rate
+
+
+In creatures.py:
+    Create separate method for dealing with mutations, currently in
+    World.mating():
+
+        Should be created to support multiple creature classes, not just
+        the predator class.
+
+        Should be able to iterate through mutliple genes for affect
+        all attributes with genes in any particular creature class.
+
+        Rate should be controlled by a slider in the control panel.
+
+    Check into Kivy's collision algorithm and create a more efficient one
+    if necessary.
+
