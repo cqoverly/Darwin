@@ -33,7 +33,7 @@ class Predator(Widget):
 
     def __init__(self,
                  *args, **kwargs):
-        super(Predator, self).__init__(*args, **kwargs)
+        super(Predator, self).__init__(**kwargs)
         self.shape_genes = kwargs.get('shape_genes', ('r', 'e'))
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
@@ -63,11 +63,10 @@ class Predator(Widget):
 
     def get_color(self):
         if 'b' in self.color_genes:
-            return (Predator.color_dict['b'], 'b')
+            return Predator.color_dict['b'], 'b'
         elif 'r' in self.color_genes:
-            return (Predator.color_dict['r'], 'r')
+            return Predator.color_dict['r'], 'r'
         else:
-
             return (Predator.color_dict[self.color_genes[0]],
                     self.color_genes[0])
 
@@ -104,7 +103,7 @@ class Predator(Widget):
         except ZeroDivisionError:
             s = s
         if self.gender == 'M':
-            s = s * .8  # Males are smaller.
+            s *= .8  # Males are smaller.
         self.size = (s, s)
 
     def update_attrs(self):
