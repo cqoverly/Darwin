@@ -35,6 +35,7 @@
             height: 30
             max: 100
             value_normalized: .5
+            on_value: self.parent.parent.read_slider('mutation_ctl')
 
         Label:
             size_hint_y: None
@@ -48,7 +49,7 @@
             max: 200
             value_normalized: .5
             steps: 1
-
+            on_value: self.parent.parent.read_slider('lifespan_ctl')
 
 <Container>:
     world: world

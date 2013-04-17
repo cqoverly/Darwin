@@ -195,6 +195,7 @@ class World(Widget):
             curr_cgenes = dict((color, d.get(color)) for color in active_colors)
             print str(curr_cgenes)
             print "Mutation rate:", self.mutation_rate
+            print "Lifepspan factor:", Predator.lifespan_factor
 
         super(World, self).on_touch_down(touch)
 
@@ -342,22 +343,10 @@ class ControlPanel(BoxLayout):
     mutation_ctl = ObjectProperty(None)
     info_disp = ObjectProperty(None)
 
-    def on_touch_down(self, touch):
-        for wid in [self.lifespan_ctl, self.mutation_ctl]:
-            if wid.collide_point(*touch.pos):
-                touch.ud['control'] = wid
-        super(ControlPanel, self).on_touch_down(touch)
-
-    def on_touch_up(self, touch):
-        if touch.ud.get('control') == self.mutation_ctl:
-            rate = self.mutation_ctl.value_normalized * self.mutation_ctl.max
-            World.mutation_rate = int(rate)
-        elif touch.ud.get('control') == self.lifespan_ctl:
-            Predator.lifespan_factor = self.lifespan_ctl.value/100
-            print Predator.lifespan_factor
-
     def update_info(self, info_dict):
-
+        """
+        Updates the info in the info window after an on_touch_down event in the World instance.
+        """
         self.info_disp.text = """
 Total: {total}
 Average Age: {age_avg}
@@ -366,7 +355,12 @@ Blues: {blues} / Reds: {reds}
 Rects: {rects} / Ellipses: {els}
 """.format(**info_dict)
 
-
+    def read_slider(self, slider):
+        print slider, type(slider)
+        if slider == 'mutation_ctl':
+            World.mutation_rate = int(self.mutation_ctl.value)
+        elif slider == 'lifespan_ctl':
+            Predator.lifespan_factor = int(self.lifespan_ctl.value)
 
 
 class Container(BoxLayout):
