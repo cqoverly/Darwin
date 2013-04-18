@@ -25,6 +25,7 @@ birth_snd = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
 mutation_snd = SoundLoader.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
 info_snd = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
 
+# Fix sound volume issues.
 
 class Predator(Widget):
     color_dict = {'b': (0, 0, 1), 'r': (1, 0, 0)}
@@ -61,6 +62,10 @@ class Predator(Widget):
             return str(self.__dict__)
 
     def get_color(self):
+        """
+        Provides values for 2 attributes of Predator: color & color_name
+        A tuple of two values is returned: (color, color_name)
+        """
         if 'b' in self.color_genes:
             return (Predator.color_dict['b'], 'b')
         elif 'r' in self.color_genes:
@@ -134,7 +139,6 @@ class Predator(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             print self
-        super(Predator, self).on_touch_down(touch)
 
 
 class World(Widget):
@@ -145,13 +149,15 @@ class World(Widget):
     sim_started = False
     mutation_rate = 50
     lifespan_ratio = 1
+    sim_speed = 35
 
     def random_position(self):
         return (random.randint(self.x+21, self.width-21),
                 random.randint(self.y+21, self.height-21))
 
     def start_world(self):
-        print self.size
+        print "Container size:", self.parent.size
+        print "World size:", self.size
         for i in range(5):
             adam = Predator(pos=self.random_position(),
                             id='adam')
@@ -170,14 +176,21 @@ class World(Widget):
             reds = len([c for c in t if c.color == (1, 0, 0)])
             els = len([c for c in t if c.shape == 'Ellipse'])
             males = len([c for c in t if c.gender == 'M'])
+            age_avg = 0
+            try:
+                age_avg = sum([c.age for c in t]) / float(len(t))
+            except ZeroDivisionError:
+                age_avg = 0
             attrs = {'reds': reds,
                      'blues': len(t) - reds,
                      'els': els,
                      'rects': len(t) - els,
                      'males': males,
                      'females': len(t) - males,
-                     'age_avg': sum([c.age for c in t])/float(len(t)),
+                     'age_avg': age_avg,
                      'total': len(t)}
+
+            info_snd.volume = 0.0
             info_snd.play()
             info = """
                     Total: {total}
@@ -193,8 +206,10 @@ class World(Widget):
             curr_cgenes = dict((color, d.get(color)) for color in active_colors)
             print str(curr_cgenes)
             print "Mutation rate:", self.mutation_rate
-            print "Lifepspan factor:", Predator.lifespan_factor
-
+            print "Lifespan factor:", Predator.lifespan_factor
+            print self.parent.snd_volume
+            print info_snd.volume
+            return True
         super(World, self).on_touch_down(touch)
 
     def mating(self, creatureA, creatureB):
@@ -202,10 +217,6 @@ class World(Widget):
         Method sets ability to mate and the chance that mating will occur and
         be successful.  Mutations are handled on a random (and rare) basis.
         """
-# TODO: Pull method too deal with mutation separately, and make it not
-# creature specific so it can be used with any set of genes in any creature.
-# Also, it should be made to deal with multiple sets of genes, returning
-# a mutatated gene for each attribute addressed my the genes in a gene list.
         spawn = 0
         pop_factor = 0
         sex = (creatureA.gender, creatureB.gender)
@@ -217,7 +228,7 @@ class World(Widget):
 
         #  Make sure it's a M/F pairing and both are old enough.
         if ('F' in sex and 'M' in sex) and (ages[0] > 2000 and ages[1] > 2000):
-            #  Random chance of successful mating
+            #  Random chance of successful mating based on population.
             if curr_preds > 100:
                 pop_factor = 1000000
             elif predators/15 > 6:
@@ -228,7 +239,7 @@ class World(Widget):
                 pop_factor = 50
             else:
                 pop_factor = 20
-            if random.randint(1, pop_factor) == (10):
+            if random.randint(1, pop_factor) == 10:
                 #  Get female
                 f = [c for c in (creatureA, creatureB) if c.gender == 'F'][0]
                 #  Get male
@@ -238,8 +249,17 @@ class World(Widget):
                 sound = birth_snd
                 for i in range(spawn):
                     #  gather genes for children.
-                    colors = [random.choice(f.color_genes),
-                              random.choice(m.color_genes)]
+                    colors = (random.choice(f.color_genes),
+                              random.choice(m.color_genes))
+
+                    shapes = (random.choice(f.shape_genes),
+                              random.choice(m.shape_genes))
+                    offspring = (random.choice(f.offspring_genes),
+                                 random.choice(m.offspring_genes))
+                    new_creature = Predator(pos=f.pos,
+                                            shape_genes=shapes,
+                                            color_genes=colors,
+                                            offspring_genes=offspring)
 
                     # check for color mutation
                     if self.mutation_rate >= 1:
@@ -249,36 +269,13 @@ class World(Widget):
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
-                        curr_colors = Predator.color_dict.values()
-                        base_color = [0, 0, 0]
-                        for hue in range(2):  # R, G, or B hue.
-                            # value = random.randint(5, 10)/10.0
-                            value = round(random.random(), 1)
-                            if value == 0:
-                                value += 0.1  # Make sure it has a value
-                            # make mutable copy of gene to mutate
-                            # Change gene
-                            base_color[hue] = value
-                        base_color = tuple(base_color)
-                        # Add to color_dictionary if it doesn't exist.
-                        # Only transfer the gene if it doesn't exist.
-                        if base_color not in curr_colors:
-                            sound = mutation_snd
-                            gene_name = "M{0}".format(str(self.mutation_count))
-                            Predator.color_dict[gene_name] = base_color
-                            self.mutation_count += 1
-                            print "MUTATION! Color: {0}".format(base_color)
-                            colors[1] = gene_name
+                        from mutation import Mutator
+                        sound = mutation_snd
+                        # create a Mutator instance with new offspring
+                        mutator = Mutator(new_creature)
+                        # mutate one gene in the new offspring.
+                        new_creature = mutator.mutate()
 
-                    colors = tuple(colors)
-                    shapes = (random.choice(f.shape_genes),
-                              random.choice(m.shape_genes))
-                    offspring = (random.choice(f.offspring_genes),
-                                 random.choice(m.offspring_genes))
-                    new_creature = Predator(pos=f.pos,
-                                            shape_genes=shapes,
-                                            color_genes=colors,
-                                            offspring_genes=offspring)
                     self.add_widget(new_creature)
                     sound.play()
                     print new_creature
@@ -318,10 +315,10 @@ class World(Widget):
         # for c in self.children:
         for c in preds:
             #  Check to see if creature hitting top of bottom of window.
-            if c.top > self.height or c.y < self.y:
+            if c.top > self.height - 5 or c.y < self.y + 5:
                 c.velocity_y *= -1
             #  Check to see if creature is hetting left or right sede of window.
-            if c.x < self.x or c.x + c.width > self.width:
+            if c.x < self.x + 5 or c.x + c.width > self.x + self.width - 5:
                 c.velocity_x *= -1
             c.velocity = c.velocity_x, c.velocity_y
             #  Check females for collisions.
@@ -337,7 +334,7 @@ class World(Widget):
 class ControlPanel(BoxLayout):
     lifespan_ctl = ObjectProperty(None)
     mating_ctl = ObjectProperty(None)
-    sim_speed = ObjectProperty(None)
+    speed_ctl = ObjectProperty(None)
     mutation_ctl = ObjectProperty(None)
     info_disp = ObjectProperty(None)
 
@@ -354,29 +351,32 @@ Rects: {rects} / Ellipses: {els}
 """.format(**info_dict)
 
     def read_slider(self, slider):
-        print slider, type(slider)
+
         if slider == 'mutation_ctl':
             World.mutation_rate = int(self.mutation_ctl.value)
         elif slider == 'lifespan_ctl':
             Predator.lifespan_factor = int(self.lifespan_ctl.value)
+        elif slider == 'speed_ctl':
+            World.sim_speed = int(self.speed_ctl.value)
 
 
 class Container(BoxLayout):
     world = ObjectProperty(None)
     ctl_panel = ObjectProperty(None)
 
+    snd_volume = 0
+
     def update(self, dt):
         self.world.update(dt)
 
 
-
 class DarwinApp(App):
 
-        def build(self):
-            rate = 30.0
-            darwin = Container()
-            Clock.schedule_interval(darwin.update, 1.0/rate)
-            return darwin
+    def build(self):
+        rate = 30.0
+        root = Container()
+        Clock.schedule_interval(root.update, 1.0 / World.sim_speed)
+        return root
 
 
 if __name__ == "__main__":
