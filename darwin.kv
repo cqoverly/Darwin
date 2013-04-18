@@ -9,6 +9,7 @@
 <ControlPanel>:
     mutation_ctl: mutation_ctl
     lifespan_ctl: lifespan_ctl
+    speed_ctl: speed_ctl
     info_disp: info
 
     size_hint_x: None
@@ -18,6 +19,11 @@
     BoxLayout:
         orientation: 'vertical'
         padding: 10
+
+        ToggleButton:
+            size_hint_y: None
+            height:30
+            text: 'Sound'
 
         TextInput:
             id: info
@@ -51,12 +57,25 @@
             steps: 1
             on_value: self.parent.parent.read_slider('lifespan_ctl')
 
+        Label:
+            size_hint_y: None
+            height: 30
+            text: "Sim Speed: {0}".format(int(speed_ctl.value))
+
+        Slider:
+            id: speed_ctl
+            size_hint_y: None
+            height: 30
+            min: 10
+            max: 60
+            value_normalized: .5
+            steps: 1
+            on_value: self.parent.parent.read_slider('speed_ctl')
+
 <Container>:
     world: world
     ctl_panel: ctl_panel
 
-
-    size: 1000, 800
 
     ControlPanel:
         id: ctl_panel
