@@ -39,6 +39,7 @@ class Predator(Widget):
         self.shape_genes = kwargs.get('shape_genes', ('r', 'e'))
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
+        self.rotation_genes = (0, 0)
         self.gender = random.choice(('M', 'F'))
         # TODO: create @color_genes.setter for color and color_name
         # self.color = self.get_color()[0]
@@ -87,6 +88,10 @@ class Predator(Widget):
             return 'Rectangle'
         else:
             return 'Ellipse'
+
+    @property
+    def rotation(self):
+        return min(self.rotation_genes)
 
     def get_size(self):
         s = 2
@@ -163,6 +168,21 @@ class World(Widget):
                 random.randint(self.y+21, self.height-21))
 
     def start_world(self):
+        """
+        Populates world with initial creatures.
+        10 Females
+        5 Males
+
+        All creatures are the default types, though default gender in
+        Predator.__init__ is random.choice('M', 'F').  For this reason it is
+        mandatory to set gender manually after each is instantiated.
+
+        Positions are set randomly through a World.random_position
+        method that attempts to ensure creatures are not created right on the
+        border of the World environment, which can cause a bug in which the
+        movement algorithm creates a situation where the Preadator instance
+        becomes such on the border.
+        """
         age = 2000
         print "Container size:", self.parent.size
         print "World size:", self.size
@@ -176,6 +196,18 @@ class World(Widget):
                 self.add_widget(eve)
 
     def on_touch_down(self, touch):
+        """
+        Override of on_touch_down method for use within the boundaries of the
+        World widget instance.
+
+        Generates a status update in the terminal, as well as a more general
+        info update into the ControlPanel instance's info_display text window.
+
+        Terminal info used for debugging purposes only.
+
+        If the touch does not occure in the World instance boundaries, the
+        original on_touch_down_method is called.
+        """
         if self.collide_point(*touch.pos):
             global info_snd
             t = self.children
@@ -223,7 +255,15 @@ class World(Widget):
     def mating(self, creatureA, creatureB):
         """
         Method sets ability to mate and the chance that mating will occur and
-        be successful.  Mutations are handled on a random (and rare) basis.
+        be successful.  Mutations are handled on a random (and rare) basis,
+        though the rate can be made more or less frequent through use of the
+        ControlPanel.mutation_ctl slider in the user interface.
+
+        For mutations, a Mutator instance is created with a Predator instance
+        as it's sole constructor aargument. Mutation of genes is handled
+        within the Mutator class methods where the Predator instance's
+        attributes are changed and then the instance sent back to be added
+        to the World widget.
         """
         spawn = 0
         pop_factor = 0
@@ -330,12 +370,11 @@ class World(Widget):
             c.velocity = c.velocity_x, c.velocity_y
             #  Check females for collisions.
             if c.gender == 'F':
-                others = [o for o in self.children if o != c]
-                for o in others:
-                    if c.collide_widget(o) and o.gender == 'M':
+                males = [o for o in self.children if o.gender != 'F']
+                for o in males:
+                    if c.collide_widget(o):  # and o.gender == 'M':
                         self.mating(c, o)
             c.update_attrs()
-
         self.count += 1
 
 
@@ -374,6 +413,26 @@ class Mutator(object):
 
 
     def mutate_color(self):
+        """
+        Generates a new noramlize rgb color combination. After new color
+        is created, method checks to see if the combination already exists
+        in the Predator.color_dict:
+
+            If color combination has not yet occurred:
+                A new color_name is generated for the combination,
+                a key with the name is created in the Predator.color_dict,
+                and the key is given the value of the new color combination.
+                Then the color_name is passed into either the first or
+                second gene in the gene pair and set to the Predator
+                instance's color_genes attribute.
+
+            If color combination has already occurred in the sim:
+                A reverse dict is created from the color_dict, the combination
+                is used as a key to find the name of the color.  Then the
+                color_name is passed into either the first or second gene
+                in the gene pair and set to the Predator instance's
+                color_genes attribute.
+        """
 
         # Reference to all current color genes.
         color_d = Predator.color_dict
@@ -389,9 +448,9 @@ class Mutator(object):
                 # make mutable copy of gene to mutate
             # Change gene
             base_color[hue] = value
-        new_color = tuple(base_color) # Cast to appropriate type.
+        new_color = tuple(base_color)  # Cast to appropriate type.
         # Add to color_dictionary if it doesn't exist.
-        curr_colors = color_d.values() # all colors in Predator.color_dict
+        curr_colors = color_d.values()  # all colors in Predator.color_dict
         if new_color not in curr_colors:
             gene_name = "M{0}".format(str(World.mutation_count))
             color_d[gene_name] = new_color
@@ -419,7 +478,11 @@ class Mutator(object):
         return
 
     def mutate_rotation(self):
-        print "ROTATION MUTATED"
+        new_rotation = random.choice(range(90))
+        temp_genes = list(self.creature.rotation_genes)
+        temp_genes[random.choice(range(2))] = new_rotation
+        self.creature.rotation_genes = tuple(temp_genes)
+        print "ROTATION MUTATED {0}".format(self.creature.rotation_genes)
         return
 
     def mutate_bias(self):
@@ -434,6 +497,29 @@ class Mutator(object):
 
 
 class ControlPanel(BoxLayout):
+    """
+    The ControlPanel is used to generate the main uer interface for the
+    application.
+
+    Controls created are:
+        lifespan_ctl:
+                Slider that sets Predator.lifespan_factor.
+                The Predator.lifespan factor raises or decreases
+                a Predator instance's base lifespan set in its
+                lifespan attribute.
+
+        mating_ctl:
+                Used to increase of decrease the possibility of
+                a successful mating.
+
+        speed_ctl:
+                Used to increase of decrease the speed of the
+                simulation.
+
+        mutation_ctl:
+                Used to increase or decrease the rate of mutations
+                when a successful mating occurs.
+    """
     lifespan_ctl = ObjectProperty(None)
     mating_ctl = ObjectProperty(None)
     speed_ctl = ObjectProperty(None)
@@ -473,14 +559,15 @@ class Container(BoxLayout):
 
 
 class DarwinApp(App):
+    rate = 30.0
 
     def build(self):
-        rate = 30.0
         root = Container()
-        Clock.schedule_interval(root.update, 1.0 / World.sim_speed)
+        Clock.schedule_interval(root.update, 1.0 / self.rate)
         return root
 
 
 if __name__ == "__main__":
+
     DarwinApp().run()
 
