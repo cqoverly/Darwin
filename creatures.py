@@ -15,6 +15,8 @@ from kivy.properties import ObjectProperty, ReferenceListProperty,\
 from kivy.core.audio import SoundLoader
 from kivy.config import Config
 
+
+
 Config.set('graphics', 'width', '1000')
 Config.set('graphics', 'height', '600')
 
@@ -55,15 +57,6 @@ class Predator(Widget):
 
 
         try:
-            # attr_list = {
-            #     'gender': self.gender,
-            #     'lifespan': self.lifespan,
-            #     'age': self.age,
-            #     'color': self.color,
-            #     'color_name': self.color_name,
-            #     'shape': self.shape,
-            #     'color_genes': self.color_genes,
-            #     'shape_genes': self.shape_genes
 
             return"""
                     Sex: {gender}  Lifespan: {lifespan}  Age {age}
@@ -83,8 +76,6 @@ class Predator(Widget):
         elif 'r' in self.color_genes:
             return 'r'
         else:
-            print 'In get_color', Predator.color_dict
-            print self.color_genes
             return self.color_genes[0]
 
     @property
@@ -124,7 +115,7 @@ class Predator(Widget):
         except ZeroDivisionError:
             s = s
         if self.gender == 'M':
-            s = s * .8  # Males are smaller.
+            s *= .8  # Males are smaller.
         self.size = (s, s)
 
     def update_attrs(self):
@@ -155,17 +146,6 @@ class Predator(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             print self
-
-    @classmethod
-    def add_color(cls, color_name, color):
-        if color_name in Predator.color_dict.keys():
-            return True
-        else:
-            Predator.color_dict[color_name] = color
-            print "Added color {0}: {1}".format(new_name, new_color)
-            print "After add_color:", Predator.color_dict
-            return False
-
 
 
 class World(Widget):
@@ -230,7 +210,8 @@ class World(Widget):
             active_colors = sorted(set([c.color_name for c in self.children]))
             d = Predator.color_dict
             print "Full color dict:", d
-            curr_cgenes = dict((color, d.get(color)) for color in active_colors)
+            curr_cgenes = dict((color_name, d.get(color_name))
+                               for color_name in active_colors)
             print "Active colors:", str(curr_cgenes)
             print "Mutation rate:", self.mutation_rate
             print "Lifespan factor:", Predator.lifespan_factor
@@ -296,7 +277,6 @@ class World(Widget):
                     # If there is a mutation, generate mutant color
                     # and add it to the Predator.color_dict
                     if mutation:
-                        from mutation import Mutator
                         sound = mutation_snd
                         # create a Mutator instance with new offspring
                         mutator = Mutator(new_creature)
@@ -357,6 +337,101 @@ class World(Widget):
             c.update_attrs()
 
         self.count += 1
+
+
+class Mutator(object):
+    """
+    Creates a mutation instance which takes a particular creature in its
+    constructor.
+
+    Methods to pick genes, mutate them, and place them back into original
+    are created.
+
+    """
+
+    def __init__(self, creature):
+        self.creature = creature
+
+    def mutate(self):
+
+        # Function map for mutations based on gene types
+        gene_dict = {
+            'color_genes': self.mutate_color,
+            'shape_genes': self.mutate_shape,
+            'rotation_genes': self.mutate_rotation,
+            'bias_genes': self.mutate_bias,
+            'offspring_genes': self.mutate_offspringgenes
+        }
+        # Find the attributes that are genes.
+        d = self.creature.__dict__
+        genes = dict((g, d.get(g)) for g in d.keys() if 'genes' in g)
+        # Randomly pick a gene type and call the correct method.
+        to_mutate = random.choice(genes.items())
+        gene_dict[to_mutate[0]]()
+        # Send mutated creature back to caller (World.mating())
+        return self.creature
+
+
+
+    def mutate_color(self):
+
+        # Reference to all current color genes.
+        color_d = Predator.color_dict
+        # Create a mutable list of the color genes.
+        genes_temp = list(self.creature.color_genes)
+        # Generate a new color (represents a mutation of a color gene)
+        base_color = [0, 0, 0]
+        for hue in range(3):  # R, G, or B hue.
+            # value = random.randint(5, 10)/10.0
+            value = round(random.random(), 1)
+            if value == 0:
+                value += 0.1  # Make sure it has a value
+                # make mutable copy of gene to mutate
+            # Change gene
+            base_color[hue] = value
+        new_color = tuple(base_color) # Cast to appropriate type.
+        # Add to color_dictionary if it doesn't exist.
+        curr_colors = color_d.values() # all colors in Predator.color_dict
+        if new_color not in curr_colors:
+            gene_name = "M{0}".format(str(World.mutation_count))
+            color_d[gene_name] = new_color
+            World.mutation_count += 1
+            print """
+                MUTATION! Color Name: {0}
+                          Color: {1}
+            """.format(gene_name, new_color)
+            genes_temp[random.choice(range(2))] = gene_name
+            genes = tuple(genes_temp)
+            self.creature.color_genes = genes
+        # If color already exists, get the color_name and pass
+        # it into color_genes
+        else:
+            # Create a reverse color_dict to look up color name
+            # of new_color.
+            rev_dict = dict((item[1], item[0]) for item in color_d.items())
+            genes_temp[random.choice(range(2))] = rev_dict[new_color]
+            genes = tuple(genes_temp) # Cast to appropriate type.
+            self.creature.color_genes = genes
+        return
+
+    def mutate_shape(self):
+        print "SHAPE MUTATED"
+        return
+
+    def mutate_rotation(self):
+        print "ROTATION MUTATED"
+        return
+
+    def mutate_bias(self):
+        print "BIAS MUTATED"
+        return
+
+    def mutate_offspringgenes(self):
+        print "OFFSPRING GENES MUTATED"
+
+        return
+
+
 
 class ControlPanel(BoxLayout):
     lifespan_ctl = ObjectProperty(None)
