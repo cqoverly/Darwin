@@ -38,12 +38,13 @@ class Predator(Widget):
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
         self.gender = random.choice(('M', 'F'))
-        self.color = self.get_color()[0]
-        self.color_name = self.get_color()[1]
+        # TODO: create @color_genes.setter for color and color_name
+        # self.color = self.get_color()[0]
+        # self.color_name = self.get_color()[1]
         self.shape = self.get_shape()
         self.lifespan = random.randint(12000, 15000)  # orig: 9000, 12000
         self.hunger = 0
-        self.age = kwargs.get['age', 0]
+        self.age = kwargs.get('age', 0)
         self.size = self.get_size()
         self.draw()
         self.velocity_x = random.randint(-2, 2)
@@ -52,28 +53,43 @@ class Predator(Widget):
 
     def __str__(self):
 
+
         try:
+            # attr_list = {
+            #     'gender': self.gender,
+            #     'lifespan': self.lifespan,
+            #     'age': self.age,
+            #     'color': self.color,
+            #     'color_name': self.color_name,
+            #     'shape': self.shape,
+            #     'color_genes': self.color_genes,
+            #     'shape_genes': self.shape_genes
+
             return"""
                     Sex: {gender}  Lifespan: {lifespan}  Age {age}
-                    Color: {color}  Color Name: {color_name} Shape: {shape}
                     Color Genes: {color_genes}  Shape Genes: {shape_genes}
                   """.format(**self.__dict__)
         except KeyError:
             return str(self.__dict__)
 
-    def get_color(self):
+    @property
+    def color_name(self):
         """
         Provides values for 2 attributes of Predator: color & color_name
         A tuple of two values is returned: (color, color_name)
         """
         if 'b' in self.color_genes:
-            return (Predator.color_dict['b'], 'b')
+            return 'b'
         elif 'r' in self.color_genes:
-            return (Predator.color_dict['r'], 'r')
+            return 'r'
         else:
+            print 'In get_color', Predator.color_dict
+            print self.color_genes
+            return self.color_genes[0]
 
-            return (Predator.color_dict[self.color_genes[0]],
-                    self.color_genes[0])
+    @property
+    def color(self):
+        return Predator.color_dict[self.color_name]
 
     def get_shape(self):
         if 'r' in self.shape_genes:
@@ -140,6 +156,17 @@ class Predator(Widget):
         if self.collide_point(*touch.pos):
             print self
 
+    @classmethod
+    def add_color(cls, color_name, color):
+        if color_name in Predator.color_dict.keys():
+            return True
+        else:
+            Predator.color_dict[color_name] = color
+            print "Added color {0}: {1}".format(new_name, new_color)
+            print "After add_color:", Predator.color_dict
+            return False
+
+
 
 class World(Widget):
     count = 0
@@ -156,16 +183,15 @@ class World(Widget):
                 random.randint(self.y+21, self.height-21))
 
     def start_world(self):
+        age = 2000
         print "Container size:", self.parent.size
         print "World size:", self.size
         for i in range(5):
-            adam = Predator(pos=self.random_position(),
-                            id='adam')
+            adam = Predator(pos=self.random_position(), age=age)
             adam.gender = 'M'
             self.add_widget(adam)
         for i in range(10):
-                eve = Predator(pos=self.random_position(),
-                               id='eve')
+                eve = Predator(pos=self.random_position(), age=age)
                 eve.gender = 'F'
                 self.add_widget(eve)
 
@@ -203,8 +229,9 @@ class World(Widget):
             self.parent.ctl_panel.update_info(attrs)
             active_colors = sorted(set([c.color_name for c in self.children]))
             d = Predator.color_dict
+            print "Full color dict:", d
             curr_cgenes = dict((color, d.get(color)) for color in active_colors)
-            print str(curr_cgenes)
+            print "Active colors:", str(curr_cgenes)
             print "Mutation rate:", self.mutation_rate
             print "Lifespan factor:", Predator.lifespan_factor
             print self.parent.snd_volume
