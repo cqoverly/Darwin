@@ -35,7 +35,7 @@ class Predator(Widget):
 
     def __init__(self,
                  *args, **kwargs):
-        super(Predator, self).__init__(*args, **kwargs)
+        super(Predator, self).__init__(**kwargs)
         self.shape_genes = kwargs.get('shape_genes', ('r', 'e'))
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
