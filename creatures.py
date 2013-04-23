@@ -23,7 +23,7 @@ Config.set('graphics', 'height', '640')
 
 # Load sound effects.
 death_snd = SoundLoader.load('sounds/neck_snap-Vladimir-719669812.wav')
-birth_snd = SoundLoader.load('sounds/Funny_Boy_Laugh-Mike_Koenig-1446565974.wav')
+birth_snd = SoundLoader.load('sounds/Pew_Pew-DKnight556-1379997159.wav')
 mutation_snd = SoundLoader.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
 info_snd = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
 
@@ -186,8 +186,8 @@ class World(Widget):
         self.clock = Clock.schedule_interval(self.update, 1/rate)
 
     def random_position(self):
-        return (random.randint(self.x+21, self.width-21),
-                random.randint(self.y+21, self.height-21))
+        return (random.randint(self.x+21, self.width-31),
+                random.randint(self.y+21, self.height-31))
 
     def start_world(self):
         """
@@ -210,11 +210,13 @@ class World(Widget):
         print "World size:", self.size
         print self.clock.__dict__
         for i in range(5):
-            adam = Predator(pos=self.random_position(), age=age)
+            adam = Predator(pos=self.random_position(),
+                            age=random.randint(1000, 2000))
             adam.gender = 'M'
             self.add_widget(adam)
         for i in range(10):
-                eve = Predator(pos=self.random_position(), age=age)
+                eve = Predator(pos=self.random_position(),
+                               age=random.randint(1000, 2000))
                 eve.gender = 'F'
                 self.add_widget(eve)
 
@@ -239,7 +241,7 @@ class World(Widget):
             males = len([c for c in t if c.gender == 'M'])
             age_avg = 0
             try:
-                age_avg = sum([c.age for c in t]) / float(len(t))
+                age_avg = round(sum([c.age for c in t]) / float(len(t)), 2)
             except ZeroDivisionError:
                 age_avg = 0
             attrs = {'reds': reds,
