@@ -41,9 +41,6 @@ class Predator(Widget):
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
         self.rotation_genes = (0, 0)
         self.gender = random.choice(('M', 'F'))
-        # TODO: create @color_genes.setter for color and color_name
-        # self.color = self.get_color()[0]
-        # self.color_name = self.get_color()[1]
         self.shape = self.get_shape()
         self.lifespan = random.randint(12000, 15000)  # orig: 9000, 12000
         self.hunger = 0
@@ -124,17 +121,34 @@ class Predator(Widget):
         self.size = (s, s)
 
     def update_attrs(self):
+        """
+        Called from World.update, which is the main update for the simulation,
+        handled by Clock,schedule_interval().
+        """
         sex = self.gender
         self.age += 1
+        # Update size until full grown.
         if (sex == 'F' and self.size[0] < 10) or\
            (sex == 'M' and self.size[0] < 8):
             self.update_size()
         self.move()
+        # Clear canvas of previous position.
         self.canvas.clear()
+        # Draw instance in new posision.
         self.draw()
         self.is_dead()
 
     def is_dead(self):
+        """
+        Method run each frame, checks if a Predator instance has reached
+        its lifespan. Population factors are taken into account to help
+        with over-populating the sim.
+
+        Predator.life_factor is controlled via a user-controlled slider
+        which allows user a large amount of control over lifespan,
+        increasing it by as much as 100%, or decreasing it all the way to zero,
+        which kills off population.
+        """
         global death_snd
         lf = Predator.lifespan_factor
         curr_preds = len(self.parent.children)
@@ -553,7 +567,8 @@ Rects: {rects} / Ellipses: {els}
         if slider == 'mutation_ctl':
             World.mutation_rate = int(self.mutation_ctl.value)
         elif slider == 'lifespan_ctl':
-            Predator.lifespan_factor = int(self.lifespan_ctl.value)
+            Predator.lifespan_factor = int(self.lifespan_ctl.value)/100.0
+            print Predator.lifespan_factor
         elif slider == 'speed_ctl':
             rate = int(self.speed_ctl.value)
             self.parent.world.speed = int(self.speed_ctl.value)
@@ -567,16 +582,11 @@ class Container(BoxLayout):
     snd_volume = 0
 
 
-    # def update(self, dt):
-    #     self.world.update(dt)
-
-
 class DarwinApp(App):
     rate = 30
 
     def build(self):
         root = Container()
-        # Clock.schedule_interval(root.update, 1.0 / self.rate)
         return root
 
 
