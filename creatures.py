@@ -169,8 +169,6 @@ class Predator(Widget):
 
 class World(Widget):
     count = 0
-    adam = ObjectProperty(None)
-    eve = ObjectProperty(None)
     mutation_count = 1
     sim_started = False
     mutation_rate = 50
