@@ -39,7 +39,6 @@ class Predator(Widget):
         self.shape_genes = kwargs.get('shape_genes', ('r', 'e'))
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
-        self.rotation_genes = (0, 0)
         self.gender = random.choice(('M', 'F'))
         self.shape = self.get_shape()
         self.lifespan = random.randint(12000, 15000)  # orig: 9000, 12000
@@ -52,8 +51,6 @@ class Predator(Widget):
         self.velocity = self.velocity_x, self.velocity_y
 
     def __str__(self):
-
-
         try:
 
             return"""
@@ -66,10 +63,6 @@ class Predator(Widget):
 
     @property
     def color_name(self):
-        """
-        Provides values for 2 attributes of Predator: color & color_name
-        A tuple of two values is returned: (color, color_name)
-        """
         if 'b' in self.color_genes:
             return 'b'
         elif 'r' in self.color_genes:
@@ -104,9 +97,6 @@ class Predator(Widget):
                 Rectangle(size=self.size, pos=self.pos)
             else:
                 Ellipse(size=self.size, pos=self.pos)
-
-    def start(self):
-        pass
 
     def move(self):
         self.pos = Vector(*self.velocity) + self.pos
@@ -169,11 +159,15 @@ class Predator(Widget):
 
 
 class World(Widget):
+    """
+    The Worlds class is used to create the main environment for the
+    simulated objects.
+    """
     count = 0
     mutation_count = 1
     sim_started = False
     mutation_rate = 50
-    lifespan_ratio = 1
+    # lifespan_ratio = 1
 
     def __init__(self, **kwargs):
         super(World, self).__init__(**kwargs)
@@ -237,6 +231,7 @@ class World(Widget):
             global info_snd
             t = self.children
             reds = len([c for c in t if c.color == (1, 0, 0)])
+            blues = len([c for c in t if c.color == (0, 0, 1)])
             els = len([c for c in t if c.shape == 'Ellipse'])
             males = len([c for c in t if c.gender == 'M'])
             age_avg = 0
@@ -245,7 +240,8 @@ class World(Widget):
             except ZeroDivisionError:
                 age_avg = 0
             attrs = {'reds': reds,
-                     'blues': len(t) - reds,
+                     'blues': blues,
+                     'mut_cols': len(t) - (blues + reds),
                      'els': els,
                      'rects': len(t) - els,
                      'males': males,
@@ -422,7 +418,6 @@ class Mutator(object):
         gene_dict = {
             'color_genes': self.mutate_color,
             'shape_genes': self.mutate_shape,
-            'rotation_genes': self.mutate_rotation,
             'bias_genes': self.mutate_bias,
             'offspring_genes': self.mutate_offspringgenes
         }
@@ -502,14 +497,6 @@ class Mutator(object):
         print "SHAPE MUTATED"
         return
 
-    def mutate_rotation(self):
-        new_rotation = random.choice(range(90))
-        temp_genes = list(self.creature.rotation_genes)
-        temp_genes[random.choice(range(2))] = new_rotation
-        self.creature.rotation_genes = tuple(temp_genes)
-        print "ROTATION MUTATED {0}".format(self.creature.rotation_genes)
-        return
-
     def mutate_bias(self):
         print "BIAS MUTATED"
         return
@@ -574,6 +561,7 @@ Total: {total}
 Average Age: {age_avg}
 Males: {males} / Females: {females}
 Blues: {blues} / Reds: {reds}
+Other Colors: {mut_cols}
 Rects: {rects} / Ellipses: {els}
 """.format(**info_dict)
 
@@ -583,7 +571,6 @@ Rects: {rects} / Ellipses: {els}
             World.mutation_rate = int(self.mutation_ctl.value)
         elif slider == 'lifespan_ctl':
             Predator.lifespan_factor = int(self.lifespan_ctl.value)/100.0
-            print Predator.lifespan_factor
         elif slider == 'speed_ctl':
             rate = int(self.speed_ctl.value)
             self.parent.world.speed = int(self.speed_ctl.value)
