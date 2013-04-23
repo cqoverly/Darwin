@@ -23,7 +23,7 @@ Config.set('graphics', 'height', '640')
 
 # Load sound effects.
 death_snd = SoundLoader.load('sounds/neck_snap-Vladimir-719669812.wav')
-birth_snd = SoundLoader.load('sounds/Blop-Mark_DiAngelo-79054334.wav')
+birth_snd = SoundLoader.load('sounds/Funny_Boy_Laugh-Mike_Koenig-1446565974.wav')
 mutation_snd = SoundLoader.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
 info_snd = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
 
@@ -59,6 +59,7 @@ class Predator(Widget):
             return"""
                     Sex: {gender}  Lifespan: {lifespan}  Age {age}
                     Color Genes: {color_genes}  Shape Genes: {shape_genes}
+                    Offspring Genes: {offspring_genes}
                   """.format(**self.__dict__)
         except KeyError:
             return str(self.__dict__)
@@ -512,7 +513,21 @@ class Mutator(object):
         return
 
     def mutate_offspringgenes(self):
-        print "OFFSPRING GENES MUTATED"
+        """
+        Mutation method that randomly changes one of a gene pair in a
+        Predator instance's offspring_genes. The actual number of offspring
+        is still selected at random from the female's offspring gene set,
+        so does sim does not use these genes in a dominant or recessive
+        manner.
+        """
+        temp_genes = list(self.creature.offspring_genes)
+        idx = random.choice(range(2))
+        old_value = temp_genes[idx]
+        new_value = random.choice((max(old_value-1, 0), old_value+1))
+        temp_genes[idx] = new_value
+        self.creature.offspring_genes = tuple(temp_genes)
+
+        print "NEW OFFSPRING GENES:", self.creature.offspring_genes
 
         return
 
