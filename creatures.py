@@ -17,8 +17,8 @@ from kivy.config import Config
 
 
 
-Config.set('graphics', 'width', '1000')
-Config.set('graphics', 'height', '600')
+Config.set('graphics', 'width', '1136')
+Config.set('graphics', 'height', '640')
 
 
 # Load sound effects.
@@ -161,7 +161,16 @@ class World(Widget):
     sim_started = False
     mutation_rate = 50
     lifespan_ratio = 1
-    sim_speed = 35
+
+    def __init__(self, **kwargs):
+        super(World, self).__init__(**kwargs)
+        self.speed = 35.0
+        self.clock = Clock.schedule_interval(self.update, 1/self.speed)
+
+    def update_clock(self, rate):
+        rate = round(float(rate), 1)
+        self.clock.release()
+        self.clock = Clock.schedule_interval(self.update, 1/rate)
 
     def random_position(self):
         return (random.randint(self.x+21, self.width-21),
@@ -186,6 +195,7 @@ class World(Widget):
         age = 2000
         print "Container size:", self.parent.size
         print "World size:", self.size
+        print self.clock.__dict__
         for i in range(5):
             adam = Predator(pos=self.random_position(), age=age)
             adam.gender = 'M'
@@ -545,25 +555,28 @@ Rects: {rects} / Ellipses: {els}
         elif slider == 'lifespan_ctl':
             Predator.lifespan_factor = int(self.lifespan_ctl.value)
         elif slider == 'speed_ctl':
-            World.sim_speed = int(self.speed_ctl.value)
+            rate = int(self.speed_ctl.value)
+            self.parent.world.speed = int(self.speed_ctl.value)
+            self.parent.world.update_clock(rate)
+
 
 
 class Container(BoxLayout):
     world = ObjectProperty(None)
     ctl_panel = ObjectProperty(None)
-
     snd_volume = 0
 
-    def update(self, dt):
-        self.world.update(dt)
+
+    # def update(self, dt):
+    #     self.world.update(dt)
 
 
 class DarwinApp(App):
-    rate = 30.0
+    rate = 30
 
     def build(self):
         root = Container()
-        Clock.schedule_interval(root.update, 1.0 / self.rate)
+        # Clock.schedule_interval(root.update, 1.0 / self.rate)
         return root
 
 
