@@ -156,6 +156,7 @@ class Predator(Widget):
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
             print self
+            print "Predator's Position:", self.pos
 
 
 class World(Widget):
@@ -227,6 +228,7 @@ class World(Widget):
         If the touch does not occure in the World instance boundaries, the
         original on_touch_down_method is called.
         """
+        super(World, self).on_touch_down(touch)
         if self.collide_point(*touch.pos):
             global info_snd
             t = self.children
@@ -271,7 +273,6 @@ class World(Widget):
             print self.parent.snd_volume
             print info_snd.volume
             return True
-        super(World, self).on_touch_down(touch)
 
     def mating(self, creatureA, creatureB):
         """
@@ -378,7 +379,7 @@ class World(Widget):
             self.count += 1
             self.start_world()
             self.sim_started = True
-        # Check all
+        # Check Predator instances for position relative to border of World.
         preds = [pred for pred in self.children if pred.__class__ == Predator]
         # for c in self.children:
         for c in preds:
@@ -397,7 +398,6 @@ class World(Widget):
                         self.mating(c, o)
             c.update_attrs()
         self.count += 1
-
 
 class Mutator(object):
     """
