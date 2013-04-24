@@ -1,5 +1,6 @@
 import random
 import copy
+from math import pi
 
 import kivy
 kivy.require('1.6.0')
@@ -36,7 +37,8 @@ class Predator(Widget):
     def __init__(self,
                  *args, **kwargs):
         super(Predator, self).__init__(**kwargs)
-        self.shape_genes = kwargs.get('shape_genes', ('r', 'e'))
+        self.shape_genes = kwargs.get('shape_genes', (['r', [10, 10]],
+                                                      ['e', [0, 360]]))
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
         self.gender = random.choice(('M', 'F'))
@@ -75,20 +77,56 @@ class Predator(Widget):
         return Predator.color_dict[self.color_name]
 
     def get_shape(self):
-        if 'r' in self.shape_genes:
+        if 'r' in (self.shape_genes[0][0], self.shape_genes[1][0]):
             return 'Rectangle'
         else:
             return 'Ellipse'
 
     @property
-    def rotation(self):
-        return min(self.rotation_genes)
-
+    def area(self):
+        if self.shape == 'Rectangle':
+            return self.size[0] * self.size[1]
+        elif self.shape =='Ellipse':
+            try:
+                arc = (self.angle_end - self.angle_start) / 360.0
+            except AttributeError:
+                arc = 1.0
+            radius = self.size[0] / 2
+            area = (pi * radius**2) * arc
+            return round(area, 2)
+        else:
+            print "There's a shape in here that shouldn't exist!"
     def get_size(self):
-        s = 2
+        width = 2
+        height = 2
         if self.gender == 'M':
-            s = int(s * .8)  # Males are smaller.
-        return (s, s)
+            width = int(width * 0.8)
+            height = int(height * 0.8)
+        return width, height
+
+
+#========================== Old Version =======================
+    # def get_size(self):
+    #     s = 2
+    #     if self.gender == 'M':
+    #         s = int(s * .8)  # Males are smaller.
+    #     return (s, s)
+#===============================================================
+
+    @property
+    def max_size(self):
+        if self.shape == 'Rectangle':
+            # Pull the gene to use, if both are 'r' then use idx 0.
+            genes = [g for g in self.shape_genes if g[0] == 'r'][0]
+            w = genes[1][0]
+            h = genes[1][1]
+        else:
+            w = 10
+            h = 10
+        if self.gender == 'M':
+            w *= 0.8
+            h *= 0.8
+        return (round(w), round(h))
 
     def draw(self):
         with self.canvas:
@@ -102,26 +140,53 @@ class Predator(Widget):
         self.pos = Vector(*self.velocity) + self.pos
 
     def update_size(self):
-        s = 0
-        try:
-            s = int(max(self.age / 200, 2))
-        except ZeroDivisionError:
-            s = s
+        w = 0
+        h = 0
+        w_growth = self.age / (2000 / self.max_size[0])
+        h_growth = self.age / (2000 / self.max_size[1])
+
+        if self.size[0] < self.max_size[0]:
+            try:
+                w = int(max(w_growth, 2))
+            except ZeroDivisionError:
+                w = w
+        if self.size[1] < self.max_size[1]:
+            try:
+                h = int(max(h_growth, 2))
+            except ZeroDivisionError:
+                h = h
         if self.gender == 'M':
-            s *= .8  # Males are smaller.
-        self.size = (s, s)
+            w *= 0.8
+            h *= 0.8
+
+        w = int(min(int(w), self.max_size[0]))
+        h = int(min(int(h), self.max_size[1]))
+        return w, h
+
+#========================== Old Version =======================
+    # def update_size(self):
+    #     s = 0
+    #     try:
+    #         s = int(max(self.age / 200, 2))
+    #     except ZeroDivisionError:
+    #         s = s
+    #     if self.gender == 'M':
+    #         s *= .8  # Males are smaller.
+    #     self.size = (s, s)
+#===============================================================
 
     def update_attrs(self):
         """
         Called from World.update, which is the main update for the simulation,
         handled by Clock,schedule_interval().
         """
-        sex = self.gender
         self.age += 1
         # Update size until full grown.
-        if (sex == 'F' and self.size[0] < 10) or\
-           (sex == 'M' and self.size[0] < 8):
-            self.update_size()
+        # if (sex == 'F' and self.size[0] < 10) or\
+        #    (sex == 'M' and self.size[0] < 8):
+        # if self.size != self.max_size:
+        if self.size[0] < self.max_size[0] and self.size[1] < self.max_size[1]:
+            self.size = self.update_size()
         self.move()
         # Clear canvas of previous position.
         self.canvas.clear()
@@ -157,6 +222,9 @@ class Predator(Widget):
         if self.collide_point(*touch.pos):
             print self
             print "Predator's Position:", self.pos
+            print "Current Size:", self.size
+            print "Max Size:", self.max_size
+            print "Area:", self.area
 
 
 class World(Widget):
@@ -494,6 +562,20 @@ class Mutator(object):
         return
 
     def mutate_shape(self):
+        to_mutate = random.choice(self.creature.shape_genes)
+        if to_mutate[0] == 'r':
+            size_attr = random.choice(range(1))
+            mutation = random.choice(range(-3, 3))
+            to_mutate[1][size_attr] += mutation
+            if to_mutate[1][size_attr] < 2:
+                to_mutate[1][size_attr] = 2
+            if to_mutate[1][size_attr] > 16:
+                to_mutate[1][size_attr] = 16
+
+            print self.creature.shape_genes
+        else:
+            print "Ellipse gene mutated"
+
         print "SHAPE MUTATED"
         return
 
