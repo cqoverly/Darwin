@@ -247,6 +247,7 @@ class World(Widget):
     sim_started = False
     mutation_rate = 50
     total_eaten = 0
+
     def __init__(self, **kwargs):
         super(World, self).__init__(**kwargs)
         self.speed = 35.0
