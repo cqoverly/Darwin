@@ -96,6 +96,9 @@ class Predator(Widget):
             return round(area, 2)
         else:
             print "There's a shape in here that shouldn't exist!"
+
+    # @property does not work in this context as it raises an exception
+    # that I don't remember, that is set off in Predator.update_attributes.
     def get_size(self):
         width = 2
         height = 2
