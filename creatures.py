@@ -23,10 +23,12 @@ Config.set('graphics', 'height', '640')
 
 
 # Load sound effects.
-death_snd = SoundLoader.load('sounds/neck_snap-Vladimir-719669812.wav')
-birth_snd = SoundLoader.load('sounds/Pew_Pew-DKnight556-1379997159.wav')
-mutation_snd = SoundLoader.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
-info_snd = SoundLoader.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
+sl = SoundLoader
+death_snd = sl.load('sounds/neck_snap-Vladimir-719669812.wav')
+birth_snd = sl.load('sounds/Pew_Pew-DKnight556-1379997159.wav')
+mutation_snd = sl.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
+info_snd = sl.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
+ate_snd = sl.load('sounds/Belch-Kevan-136688254.wav')
 
 # Fix sound volume issues.
 
@@ -51,6 +53,7 @@ class Predator(Widget):
         self.velocity_x = random.randint(-2, 2)
         self.velocity_y = random.randint(-2, 2)
         self.velocity = self.velocity_x, self.velocity_y
+        self.eaten = False
 
     def __str__(self):
         try:
@@ -209,6 +212,10 @@ class Predator(Widget):
         which kills off population.
         """
         global death_snd
+        if self.eaten:
+            death_snd.play()
+            self.parent.remove_widget(self)
+            return
         lf = Predator.lifespan_factor
         curr_preds = len(self.parent.children)
         too_old = False
@@ -239,8 +246,7 @@ class World(Widget):
     mutation_count = 1
     sim_started = False
     mutation_rate = 50
-    # lifespan_ratio = 1
-
+    total_eaten = 0
     def __init__(self, **kwargs):
         super(World, self).__init__(**kwargs)
         self.speed = 35.0
@@ -320,7 +326,8 @@ class World(Widget):
                      'males': males,
                      'females': len(t) - males,
                      'age_avg': age_avg,
-                     'total': len(t)}
+                     'total': len(t),
+                     'eaten': self.total_eaten}
 
             info_snd.volume = 0.0
             info_snd.play()
@@ -330,6 +337,7 @@ class World(Widget):
                     Males: {males} / Females: {females}
                     Blues: {blues} / Reds: {reds}
                     Rectangles: {rects} / Ellipses: {els}
+                    M eaten by F: {eaten}
                 """.format(**attrs)
             print info
             self.parent.ctl_panel.update_info(attrs)
@@ -344,6 +352,14 @@ class World(Widget):
             print self.parent.snd_volume
             print info_snd.volume
             return True
+
+    def ate_him(self, f, m):
+        if f.area >= m.area:
+            if random.randint(1, 2) == 1:
+                self.total_eaten += 1
+                return True
+            else:
+                return False
 
     def mating(self, creatureA, creatureB):
         """
@@ -365,11 +381,18 @@ class World(Widget):
         predators = len(self.children)  # Number of living predators
         global birth_snd
         global mutation_snd
+        global ate_snd
         curr_preds = len(self.children)
+        mating_bias = 1
 
         #  Make sure it's a M/F pairing and both are old enough.
         if ('F' in sex and 'M' in sex) and (ages[0] > 2000 and ages[1] > 2000):
-            #  Random chance of successful mating based on population.
+            # Get female
+            f = [c for c in (creatureA, creatureB) if c.gender == 'F'][0]
+            # Get male
+            m = [c for c in (creatureA, creatureB) if c.gender == 'M'][0]
+            # Random chance of successful mating based on population.
+            # Larger pop_factor means smaller chance of successful mating.
             if curr_preds > 100:
                 pop_factor = 1000000
             elif predators/15 > 6:
@@ -380,11 +403,16 @@ class World(Widget):
                 pop_factor = 50
             else:
                 pop_factor = 20
+            # Check for bias, Females prefer males who are
+            # smaller than themselvels.
+            if f.area * 0.9 <= m.area:
+                # Find mating bias, ensure it is at least 1
+                mating_bias = max((m.area - f.area)/f.area, 1)
+                # Multiply pop_factor based on mating bias. This will make
+                # a successful mating less likely.
+                pop_factor *= mating_bias
+            # Check for a successful mating. 1 in pop_factor chance.
             if random.randint(1, pop_factor) == 10:
-                #  Get female
-                f = [c for c in (creatureA, creatureB) if c.gender == 'F'][0]
-                #  Get male
-                m = [c for c in (creatureA, creatureB) if c.gender == 'M'][0]
                 #  Choose which birth genes to use.
                 spawn = random.choice(f.offspring_genes)
                 sound = birth_snd
@@ -417,11 +445,16 @@ class World(Widget):
                         new_creature = mutator.mutate()
 
                     self.add_widget(new_creature)
-                    sound.play()
                     print new_creature
+                ate = self.ate_him(f, m)
+                if ate:
+                    m.eaten = True
+                    ate_snd.play()
+                sound.play()
                 print """
                 MATING! Babies: {0} / Total Predators: {1}
                 """.format(spawn, len(self.children))
+
 
     def update(self, dt):
         """
@@ -649,6 +682,7 @@ Males: {males} / Females: {females}
 Blues: {blues} / Reds: {reds}
 Other Colors: {mut_cols}
 Rects: {rects} / Ellipses: {els}
+M Eaten by F: {eaten}
 """.format(**info_dict)
 
     def read_slider(self, slider):
