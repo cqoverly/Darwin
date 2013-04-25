@@ -564,11 +564,12 @@ class Mutator(object):
     def mutate_shape(self):
         to_mutate = random.choice(self.creature.shape_genes)
         if to_mutate[0] == 'r':
-            size_attr = random.choice(range(1))
-            mutation = random.choice(range(-3, 3))
+            size_attr = random.choice(range(2))
+            mutation = random.choice(range(-3, 4))
+            print "Mutating gene:", to_mutate[1]
             to_mutate[1][size_attr] += mutation
-            if to_mutate[1][size_attr] < 2:
-                to_mutate[1][size_attr] = 2
+            if to_mutate[1][size_attr] < 3:
+                to_mutate[1][size_attr] = 3
             if to_mutate[1][size_attr] > 16:
                 to_mutate[1][size_attr] = 16
 
