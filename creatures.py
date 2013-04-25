@@ -355,7 +355,7 @@ class World(Widget):
             return True
 
     def ate_him(self, f, m):
-        if f.area >= m.area:
+        if f.area * 0.7 >= m.area:
             if random.randint(1, 2) == 1:
                 self.total_eaten += 1
                 return True
