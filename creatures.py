@@ -355,7 +355,12 @@ class World(Widget):
             return True
 
     def ate_him(self, f, m):
-        if f.area * 0.7 >= m.area:
+        """
+        Determines whether a female eats a male after mating or not.
+        """
+        # Will only eat males 70% of own size or smaller.
+        if f.area * 0.5 >= m.area:
+            # Channce of f catching male.
             if random.randint(1, 2) == 1:
                 self.total_eaten += 1
                 return True
