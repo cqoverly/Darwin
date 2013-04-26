@@ -242,6 +242,11 @@ class World(Widget):
     The Worlds class is used to create the main environment for the
     simulated objects.
     """
+    top_bound = ObjectProperty(None)
+    bottom_bound = ObjectProperty(None)
+    left_bound = ObjectProperty(None)
+    right_bound = ObjectProperty(None)
+
     count = 0
     mutation_count = 1
     sim_started = False
@@ -502,7 +507,7 @@ class World(Widget):
             c.velocity = c.velocity_x, c.velocity_y
             #  Check females for collisions.
             if c.gender == 'F':
-                males = [o for o in self.children if o.gender != 'F']
+                males = [o for o in preds if o.gender != 'F']
                 for o in males:
                     if c.collide_widget(o):  # and o.gender == 'M':
                         self.mating(c, o)

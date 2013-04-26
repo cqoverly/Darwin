@@ -83,6 +83,11 @@
 
     World:
         id: world
+        top_bound: top
+        bottom_bound: bottom
+        left_bound: left
+        right_bound: right
+
         canvas:
             Color:
                 rgba: 1, 1, 1, .7
@@ -90,6 +95,65 @@
             Rectangle:
                 size: self.size
                 pos: self.pos
+
+        Widget:
+            id: left
+            size_hint: None, None
+            width: 5
+            height: self.parent.height
+            pos: self.parent.pos
+            canvas:
+                Color:
+                    rgb: .5, 1, 0
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+
+        Widget:
+            id: right
+            size_hint: None, None
+            width: 5
+            height: self.parent.height
+            pos_hint_x: None
+            x: self.parent.x + self.parent.width - 5
+            canvas:
+                Color:
+                    rgb: .5, 1, 0
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+
+        Widget:
+            id: top
+            size_hint: None, None
+            width: self.parent.width
+            height: 5
+            pos_hint: None, None
+            x: self.parent.x
+            y: self.parent.height - 5
+            canvas:
+                Color:
+                    rgb: .5, 1, 0
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+
+        Widget:
+            id: bottom
+            size_hint: None, None
+            width: self.parent.width
+            height: 5
+            pos_hint_x: None
+            x: self.parent.x
+            canvas:
+                Color:
+                    rgb: .5, 1, 0
+                Rectangle:
+                    size: self.size
+                    pos: self.pos
+
+
+
 
 
 
