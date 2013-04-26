@@ -54,6 +54,7 @@ class Predator(Widget):
         self.velocity_y = random.randint(-2, 2)
         self.velocity = self.velocity_x, self.velocity_y
         self.eaten = False
+        self.stuck = 0
 
     def __str__(self):
         try:
@@ -212,7 +213,7 @@ class Predator(Widget):
         which kills off population.
         """
         global death_snd
-        if self.eaten:
+        if self.eaten or self.stuck == 600:
             death_snd.play()
             self.parent.remove_widget(self)
             return
@@ -298,6 +299,9 @@ class World(Widget):
                 eve.gender = 'F'
                 self.add_widget(eve)
 
+    def get_preds(self):
+        return [p for p in self.children if isinstance(p, Predator)]
+
     def on_touch_down(self, touch):
         """
         Override of on_touch_down method for use within the boundaries of the
@@ -312,27 +316,27 @@ class World(Widget):
         original on_touch_down_method is called.
         """
         super(World, self).on_touch_down(touch)
+        preds = self.get_preds()
         if self.collide_point(*touch.pos):
             global info_snd
-            t = self.children
-            reds = len([c for c in t if c.color == (1, 0, 0)])
-            blues = len([c for c in t if c.color == (0, 0, 1)])
-            els = len([c for c in t if c.shape == 'Ellipse'])
-            males = len([c for c in t if c.gender == 'M'])
+            reds = len([c for c in preds if c.color == (1, 0, 0)])
+            blues = len([c for c in preds if c.color == (0, 0, 1)])
+            els = len([c for c in preds if c.shape == 'Ellipse'])
+            males = len([c for c in preds if c.gender == 'M'])
             age_avg = 0
             try:
-                age_avg = round(sum([c.age for c in t]) / float(len(t)), 2)
+                age_avg = round(sum([c.age for c in preds]) / float(len(preds)), 2)
             except ZeroDivisionError:
                 age_avg = 0
             attrs = {'reds': reds,
                      'blues': blues,
-                     'mut_cols': len(t) - (blues + reds),
+                     'mut_cols': len(preds) - (blues + reds),
                      'els': els,
-                     'rects': len(t) - els,
+                     'rects': len(preds) - els,
                      'males': males,
-                     'females': len(t) - males,
+                     'females': len(preds) - males,
                      'age_avg': age_avg,
-                     'total': len(t),
+                     'total': len(preds),
                      'eaten': self.total_eaten}
 
             info_snd.volume = 0.0
@@ -347,7 +351,7 @@ class World(Widget):
                 """.format(**attrs)
             print info
             self.parent.ctl_panel.update_info(attrs)
-            active_colors = sorted(set([c.color_name for c in self.children]))
+            active_colors = sorted(set([c.color_name for c in preds]))
             d = Predator.color_dict
             print "Full color dict:", d
             curr_cgenes = dict((color_name, d.get(color_name))
@@ -358,6 +362,7 @@ class World(Widget):
             print self.parent.snd_volume
             print info_snd.volume
             return True
+
 
     def ate_him(self, f, m):
         """
@@ -393,7 +398,8 @@ class World(Widget):
         global birth_snd
         global mutation_snd
         global ate_snd
-        curr_preds = len(self.children)
+        preds = self.get_preds()
+        curr_preds = len(preds)
         mating_bias = 1
 
         #  Make sure it's a M/F pairing and both are old enough.
@@ -462,10 +468,6 @@ class World(Widget):
                     m.eaten = True
                     ate_snd.play()
                 sound.play()
-                print """
-                MATING! Babies: {0} / Total Predators: {1}
-                """.format(spawn, len(self.children))
-
 
     def update(self, dt):
         """
@@ -477,6 +479,7 @@ class World(Widget):
         matings and births.
         """
 
+        preds = self.get_preds()
         # Randomize movements for each predator instance
         if self.count <= 600:  # Overall movement time frame.
             #  Check for random movement every 10 frames.
@@ -495,15 +498,19 @@ class World(Widget):
             self.start_world()
             self.sim_started = True
         # Check Predator instances for position relative to border of World.
-        preds = [pred for pred in self.children if pred.__class__ == Predator]
-        # for c in self.children:
         for c in preds:
             #  Check to see if creature hitting top of bottom of window.
-            if c.top > self.height - 5 or c.y < self.y + 5:
+            if c.collide_widget(self.top_bound) or \
+                    c.collide_widget(self.bottom_bound):
                 c.velocity_y *= -1
+                c.stuck += 1
             #  Check to see if creature is hetting left or right sede of window.
-            if c.x < self.x + 5 or c.x + c.width > self.x + self.width - 5:
+            elif c.collide_widget(self.left_bound) or \
+                    c.collide_widget(self.right_bound):
                 c.velocity_x *= -1
+                c.stuck += 1
+            else:
+                c.stuck = 0  # Not, stuck, reset stuck attr.
             c.velocity = c.velocity_x, c.velocity_y
             #  Check females for collisions.
             if c.gender == 'F':
@@ -513,6 +520,7 @@ class World(Widget):
                         self.mating(c, o)
             c.update_attrs()
         self.count += 1
+
 
 class Mutator(object):
     """
