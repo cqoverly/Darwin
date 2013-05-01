@@ -44,7 +44,7 @@ class Predator(Widget):
         self.color_genes = kwargs.get('color_genes', ('b', 'r'))
         self.offspring_genes = kwargs.get('offspring_genes', (1, 2))
         self.gender = random.choice(('M', 'F'))
-        self.shape = self.get_shape()
+        # self.shape = self.get_shape()
         self.lifespan = random.randint(12000, 15000)  # orig: 9000, 12000
         self.hunger = 0
         self.age = kwargs.get('age', 0)
@@ -80,12 +80,6 @@ class Predator(Widget):
     def color(self):
         return Predator.color_dict[self.color_name]
 
-    def get_shape(self):
-        if 'r' in (self.shape_genes[0][0], self.shape_genes[1][0]):
-            return 'Rectangle'
-        else:
-            return 'Ellipse'
-
     @property
     def area(self):
         if self.shape == 'Rectangle':
@@ -101,25 +95,6 @@ class Predator(Widget):
         else:
             print "There's a shape in here that shouldn't exist!"
 
-    # @property does not work in this context as it raises an exception
-    # that I don't remember, that is set off in Predator.update_attributes.
-    def get_size(self):
-        width = 2
-        height = 2
-        if self.gender == 'M':
-            width = int(width * 0.8)
-            height = int(height * 0.8)
-        return width, height
-
-
-#========================== Old Version =======================
-    # def get_size(self):
-    #     s = 2
-    #     if self.gender == 'M':
-    #         s = int(s * .8)  # Males are smaller.
-    #     return (s, s)
-#===============================================================
-
     @property
     def max_size(self):
         if self.shape == 'Rectangle':
@@ -134,6 +109,24 @@ class Predator(Widget):
             w *= 0.8
             h *= 0.8
         return (round(w), round(h))
+
+    @property
+    def shape(self):
+        if 'r' in (self.shape_genes[0][0], self.shape_genes[1][0]):
+            return 'Rectangle'
+        else:
+            return 'Ellipse'
+
+    # @property does not work in this context as it raises an exception
+    # that I don't remember, that is set off in Predator.update_attributes.
+    def get_size(self):
+        width = 2
+        height = 2
+        if self.gender == 'M':
+            # Males are smaller.
+            width = int(width * 0.8)
+            height = int(height * 0.8)
+        return width, height
 
     def draw(self):
         with self.canvas:
@@ -170,18 +163,6 @@ class Predator(Widget):
         h = int(min(int(h), self.max_size[1]))
         return w, h
 
-#========================== Old Version =======================
-    # def update_size(self):
-    #     s = 0
-    #     try:
-    #         s = int(max(self.age / 200, 2))
-    #     except ZeroDivisionError:
-    #         s = s
-    #     if self.gender == 'M':
-    #         s *= .8  # Males are smaller.
-    #     self.size = (s, s)
-#===============================================================
-
     def update_attrs(self):
         """
         Called from World.update, which is the main update for the simulation,
@@ -189,11 +170,8 @@ class Predator(Widget):
         """
         self.age += 1
         # Update size until full grown.
-        # if (sex == 'F' and self.size[0] < 10) or\
-        #    (sex == 'M' and self.size[0] < 8):
-        # if self.size != self.max_size:
         if self.size[0] < self.max_size[0] and self.size[1] < self.max_size[1]:
-            self.size = self.update_size()
+            self.size = self.updaœte_size()
         self.move()
         # Clear canvas of previous position.
         self.canvas.clear()
