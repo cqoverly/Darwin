@@ -17,7 +17,6 @@ from kivy.core.audio import SoundLoader
 from kivy.config import Config
 
 
-
 Config.set('graphics', 'width', '1136')
 Config.set('graphics', 'height', '640')
 
@@ -31,6 +30,7 @@ info_snd = sl.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
 ate_snd = sl.load('sounds/Belch-Kevan-136688254.wav')
 
 # Fix sound volume issues.
+
 
 class Predator(Widget):
     color_dict = {'b': (0, 0, 1), 'r': (1, 0, 0)}
@@ -84,7 +84,7 @@ class Predator(Widget):
     def area(self):
         if self.shape == 'Rectangle':
             return self.size[0] * self.size[1]
-        elif self.shape =='Ellipse':
+        elif self.shape == 'Ellipse':
             try:
                 arc = (self.angle_end - self.angle_start) / 360.0
             except AttributeError:
@@ -171,7 +171,7 @@ class Predator(Widget):
         self.age += 1
         # Update size until full grown.
         if self.size[0] < self.max_size[0] and self.size[1] < self.max_size[1]:
-            self.size = self.updaœte_size()
+            self.size = self.update_size()
         self.move()
         # Clear canvas of previous position.
         self.canvas.clear()
@@ -262,7 +262,6 @@ class World(Widget):
         movement algorithm creates a situation where the Preadator instance
         becomes such on the border.
         """
-        age = 2000
         print "Container size:", self.parent.size
         print "World size:", self.size
         print self.clock.__dict__
@@ -340,7 +339,6 @@ class World(Widget):
             print self.parent.snd_volume
             print info_snd.volume
             return True
-
 
     def ate_him(self, f, m):
         """
@@ -482,7 +480,7 @@ class World(Widget):
                     c.collide_widget(self.bottom_bound):
                 c.velocity_y *= -1
                 c.stuck += 1
-            #  Check to see if creature is hetting left or right sede of window.
+            #  Check to see if creature is hitting left or right side of window.
             elif c.collide_widget(self.left_bound) or \
                     c.collide_widget(self.right_bound):
                 c.velocity_x *= -1
@@ -530,8 +528,6 @@ class Mutator(object):
         gene_dict[to_mutate[0]]()
         # Send mutated creature back to caller (World.mating())
         return self.creature
-
-
 
     def mutate_color(self):
         """
@@ -590,7 +586,7 @@ class Mutator(object):
             # of new_color.
             rev_dict = dict((item[1], item[0]) for item in color_d.items())
             genes_temp[random.choice(range(2))] = rev_dict[new_color]
-            genes = tuple(genes_temp) # Cast to appropriate type.
+            genes = tuple(genes_temp)  # Cast to appropriate type.
             self.creature.color_genes = genes
         return
 
@@ -635,7 +631,6 @@ class Mutator(object):
         print "NEW OFFSPRING GENES:", self.creature.offspring_genes
 
         return
-
 
 
 class ControlPanel(BoxLayout):
@@ -694,7 +689,6 @@ M Eaten by F: {eaten}
             self.parent.world.update_clock(rate)
 
 
-
 class Container(BoxLayout):
     world = ObjectProperty(None)
     ctl_panel = ObjectProperty(None)
@@ -712,4 +706,3 @@ class DarwinApp(App):
 if __name__ == "__main__":
 
     DarwinApp().run()
-
