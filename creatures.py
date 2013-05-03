@@ -35,6 +35,7 @@ ate_snd = sl.load('sounds/Belch-Kevan-136688254.wav')
 class Predator(Widget):
     color_dict = {'b': (0, 0, 1), 'r': (1, 0, 0)}
     lifespan_factor = 1  # Controlled by ControlPanel.lifespan_ctl slider
+    death = False
 
     def __init__(self,
                  *args, **kwargs):
@@ -205,7 +206,8 @@ class Predator(Widget):
             too_old = True
         if too_old:
             self.parent.remove_widget(self)
-            death_snd.play()
+            # death_snd.play()
+            Predator.death = True
 
     def on_touch_down(self, touch):
         if self.collide_point(*touch.pos):
@@ -316,7 +318,7 @@ class World(Widget):
                      'total': len(preds),
                      'eaten': self.total_eaten}
 
-            info_snd.volume = 0.0
+            info_snd.volume = 0
             info_snd.play()
             info = """
                     Total: {total}
@@ -338,6 +340,7 @@ class World(Widget):
             print "Lifespan factor:", Predator.lifespan_factor
             print self.parent.snd_volume
             print info_snd.volume
+            print info_snd.__class__
             return True
 
     def ate_him(self, f, m):
@@ -455,6 +458,7 @@ class World(Widget):
         matings and births.
         """
 
+        global death_snd
         preds = self.get_preds()
         # Randomize movements for each predator instance
         if self.count <= 600:  # Overall movement time frame.
@@ -478,11 +482,19 @@ class World(Widget):
             #  Check to see if creature hitting top of bottom of window.
             if c.collide_widget(self.top_bound) or \
                     c.collide_widget(self.bottom_bound):
+                if c.y < self.y + 6:
+                    c.y = self.y + 7
+                elif c.y + c.height > self.y + self.height - 6:
+                    c.y = self.y + self.height - 7 - c.height
                 c.velocity_y *= -1
                 c.stuck += 1
             #  Check to see if creature is hitting left or right side of window.
             elif c.collide_widget(self.left_bound) or \
                     c.collide_widget(self.right_bound):
+                if c.x < self.x + 6:
+                    c.x = self.x + 7
+                elif c.x + c. width > self.x + self.width - 6:
+                    c.x = self.x + self.width - 7 - c.width
                 c.velocity_x *= -1
                 c.stuck += 1
             else:
@@ -495,6 +507,9 @@ class World(Widget):
                     if c.collide_widget(o):  # and o.gender == 'M':
                         self.mating(c, o)
             c.update_attrs()
+            if Predator.death:
+                Predator.death = False
+                death_snd.play()
         self.count += 1
 
 
