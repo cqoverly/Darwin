@@ -489,6 +489,7 @@ class World(Widget):
                 c.velocity_y *= -1
                 c.stuck += 1
             #  Check to see if creature is hitting left or right side of window.
+            #  Move creature inbounds if necessary.
             elif c.collide_widget(self.left_bound) or \
                     c.collide_widget(self.right_bound):
                 if c.x < self.x + 6:
