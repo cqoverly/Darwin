@@ -29,10 +29,36 @@ mutation_snd = sl.load('sounds/Child Scream-SoundBible.com-1951741114.wav')
 info_snd = sl.load('sounds/Mario_Jumping-Mike_Koenig-989896458.wav')
 ate_snd = sl.load('sounds/Belch-Kevan-136688254.wav')
 
-# Fix sound volume issues.
+# TODO: Fix sound volume issues.
 
 
 class Predator(Widget):
+    """
+    The Predator class provides the main creature instance. (Prey class may be
+    implemented later.)
+
+    Gene Dominance:
+        Shape: Rectangle (r) over Ellipse (e)
+        Color: Blue (b) over Red (r) over mutated colors.
+               If both color_genes are mutated, idx[0] becomes dominant.
+        Offspring: No dominant gene. 50/50 change at time of breeding.
+        Gender: No dominant gene. 50/50 change at time of inception.
+
+    Instances are updated with each clock cycle.
+
+    self.max_size is used for initial growth. Once instance's size = max_size
+    the size will no longer be updated and it is full grown.
+
+    self.lifespan sets the number of clock cycles the instance will live.
+    This may be shortened programatically if populations get large. Or a male
+    may have life cut short if eaten by a female. self.lifespan may also be
+    modified by user via the lifespan control slider.
+
+    """
+
+    # The color_dict holds all colors present at time present. Mutated colors
+    # are added as they occur. The dict is used for to determing rgb for
+    # drawing purposes.
     color_dict = {'b': (0, 0, 1), 'r': (1, 0, 0)}
     lifespan_factor = 1  # Controlled by ControlPanel.lifespan_ctl slider
     death = False
@@ -50,12 +76,12 @@ class Predator(Widget):
         self.hunger = 0
         self.age = kwargs.get('age', 0)
         self.size = self.get_size()
-        self.draw()
+        self.draw()  # place the initial instance on canvas.
         self.velocity_x = random.randint(-2, 2)
         self.velocity_y = random.randint(-2, 2)
         self.velocity = self.velocity_x, self.velocity_y
-        self.eaten = False
-        self.stuck = 0
+        self.eaten = False  # Flag for use during update.
+        self.stuck = 0  # Counter to monitor how long instance on border.
 
     def __str__(self):
         try:
@@ -79,6 +105,10 @@ class Predator(Widget):
 
     @property
     def color(self):
+        """
+        color property determines the actual rgb value of the instance's
+        color, used to draw the instance on the canvas.
+        """
         return Predator.color_dict[self.color_name]
 
     @property
@@ -98,29 +128,48 @@ class Predator(Widget):
 
     @property
     def max_size(self):
+        """
+        The shape definition. of an instance is at idx[1] of each shape gene.
+        For example: shape_genes = (['r', [10, 12]], ['e', [0, 270]])
+        In the above example, the instance has 2 shape genes, one for a
+        rectangle with amax_size of width 10 and height 12. The second gene
+        is for an ellipse, with the shape definition determining its arc
+        instead of dimensions. Ellipse dimensions default to a 10 diameter for
+        females and an 8 diameter for males. The rectangle ('r') gene is
+        dominant.
+        """
         if self.shape == 'Rectangle':
-            # Pull the gene to use, if both are 'r' then use idx 0.
+            # Pull the gene to use, if both are 'r' then use idx 0, making
+            # the size in idx 0 dominant.
             genes = [g for g in self.shape_genes if g[0] == 'r'][0]
             w = genes[1][0]
             h = genes[1][1]
         else:
             w = 10
             h = 10
-        if self.gender == 'M':
+        if self.gender == 'M':  # Make the males 80% of females.
             w *= 0.8
             h *= 0.8
         return (round(w), round(h))
 
     @property
     def shape(self):
+        """
+        'r' is dominant. So if it is in either gene, it's a rectangle.
+        """
+
         if 'r' in (self.shape_genes[0][0], self.shape_genes[1][0]):
             return 'Rectangle'
         else:
             return 'Ellipse'
 
-    # @property does not work in this context as it raises an exception
+    # Using @property does not work in this context as it raises an exception
     # that I don't remember, that is set off in Predator.update_attributes.
     def get_size(self):
+        """
+        Used to create initial size of instance if none given.
+        """
+
         width = 2
         height = 2
         if self.gender == 'M':
@@ -130,6 +179,11 @@ class Predator(Widget):
         return width, height
 
     def draw(self):
+        """
+        The draw() method is called every time the creature needs to be
+        updated for movement, size, or initial creation.
+        """
+
         with self.canvas:
             Color(*self.color)
             if self.shape == "Rectangle":
@@ -141,6 +195,12 @@ class Predator(Widget):
         self.pos = Vector(*self.velocity) + self.pos
 
     def update_size(self):
+        """
+        The update_size method is used to grow the instance to its full size
+        over time. Once the instance is full grown, the method is no longer
+        used in the update_attrs method.
+        """
+
         w = 0
         h = 0
         w_growth = self.age / (2000 / self.max_size[0])
@@ -178,6 +238,7 @@ class Predator(Widget):
         self.canvas.clear()
         # Draw instance in new posision.
         self.draw()
+        # Check if instance is still alive. And handle if not.
         self.is_dead()
 
     def is_dead(self):
@@ -210,6 +271,11 @@ class Predator(Widget):
             Predator.death = True
 
     def on_touch_down(self, touch):
+        """
+        Gather information about an instance and print to stdout, which
+        is terminal by default.
+        """
+
         if self.collide_point(*touch.pos):
             print self
             print "Predator's Position:", self.pos
@@ -228,23 +294,31 @@ class World(Widget):
     left_bound = ObjectProperty(None)
     right_bound = ObjectProperty(None)
 
-    count = 0
+    count = 0  # Used the sequence initial creation steps.
     mutation_count = 1
     sim_started = False
-    mutation_rate = 50
-    total_eaten = 0
+    mutation_rate = 50  # can be adjusted via control panel slider.
+    total_eaten = 0  # For debugging purposes.
 
     def __init__(self, **kwargs):
         super(World, self).__init__(**kwargs)
         self.speed = 35.0
+        # Create a clock instance that calls self.update every cycle.
         self.clock = Clock.schedule_interval(self.update, 1/self.speed)
 
     def update_clock(self, rate):
-        rate = round(float(rate), 1)
+        clock_rate = round(float(rate), 1)
+        # self.clock must be released to keep multiple instances
+        # from being created, multiplying update intervals by number of
+        # clock instances.
         self.clock.release()
-        self.clock = Clock.schedule_interval(self.update, 1/rate)
+        self.clock = Clock.schedule_interval(self.update, 1/clock_rate)
 
     def random_position(self):
+        """
+        Method is used to place initial instances of Predator during
+        start_world method.
+        """
         return (random.randint(self.x+21, self.width-31),
                 random.randint(self.y+21, self.height-31))
 
@@ -706,13 +780,16 @@ M Eaten by F: {eaten}
 
 
 class Container(BoxLayout):
+    """
+    Container creates the root widget for the simulation.
+    """
     world = ObjectProperty(None)
     ctl_panel = ObjectProperty(None)
     snd_volume = 0
 
 
 class DarwinApp(App):
-    rate = 30
+    # rate = 30
 
     def build(self):
         root = Container()
